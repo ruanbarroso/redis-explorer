@@ -1,3 +1,9 @@
+## [1.2.1](https://github.com/ruanbarroso/redis-explorer/compare/v1.2.0...v1.2.1) (2025-10-21)
+
+### 🐛 Bug Fixes
+
+* corrige condicao Docker build e usa tag fixa para teste ([1534cc8](https://github.com/ruanbarroso/redis-explorer/commit/1534cc852d449d7a8a9e83119781f9f075729570))
+
 ## [1.2.0](https://github.com/ruanbarroso/redis-explorer/compare/v1.1.0...v1.2.0) (2025-10-21)
 
 ### 🚀 Features
