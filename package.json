@@ -5,13 +5,13 @@
   "private": false,
   "author": "Redis Explorer Contributors",
   "license": "MIT",
-  "homepage": "https://github.com/your-username/redis-explorer#readme",
+  "homepage": "https://github.com/ruanbarroso/redis-explorer#readme",
   "repository": {
     "type": "git",
-    "url": "https://github.com/your-username/redis-explorer.git"
+    "url": "https://github.com/ruanbarroso/redis-explorer.git"
   },
   "bugs": {
-    "url": "https://github.com/your-username/redis-explorer/issues"
+    "url": "https://github.com/ruanbarroso/redis-explorer/issues"
   },
   "keywords": [
     "redis",
