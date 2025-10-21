@@ -1,3 +1,9 @@
+## [1.2.2](https://github.com/ruanbarroso/redis-explorer/compare/v1.2.1...v1.2.2) (2025-10-21)
+
+### 🐛 Bug Fixes
+
+* atualiza Dockerfile para Node.js 22 para compatibilidade com semantic-release ([55c2462](https://github.com/ruanbarroso/redis-explorer/commit/55c24624733f3dd5a86a196de052bc2d70546923))
+
 ## [1.2.1](https://github.com/ruanbarroso/redis-explorer/compare/v1.2.0...v1.2.1) (2025-10-21)
 
 ### 🐛 Bug Fixes
