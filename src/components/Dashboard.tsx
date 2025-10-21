@@ -51,15 +51,23 @@ const Dashboard = () => {
 
   useEffect(() => {
     if (activeConnection) {
-      handleRefresh();
+      // Initial load with a small delay to ensure connection is ready
+      const timeoutId = setTimeout(() => {
+        handleRefresh();
+      }, 100);
       
       if (autoRefresh) {
         const interval = setInterval(() => {
           handleRefresh();
         }, 5000);
         
-        return () => clearInterval(interval);
+        return () => {
+          clearTimeout(timeoutId);
+          clearInterval(interval);
+        };
       }
+      
+      return () => clearTimeout(timeoutId);
     }
   }, [activeConnection, autoRefresh]);
 
@@ -80,10 +88,22 @@ const Dashboard = () => {
     }
   }, [stats]);
 
-  const handleRefresh = () => {
-    dispatch(fetchStats());
-    dispatch(fetchInfo());
-    dispatch(fetchSlowLog(10));
+  const handleRefresh = async () => {
+    if (!activeConnection) {
+      console.warn('No active connection for dashboard refresh');
+      return;
+    }
+
+    try {
+      // Dispatch actions with error handling
+      await Promise.allSettled([
+        dispatch(fetchStats()),
+        dispatch(fetchInfo()),
+        dispatch(fetchSlowLog(10))
+      ]);
+    } catch (error) {
+      console.error('Error during dashboard refresh:', error);
+    }
   };
 
   const formatBytes = (bytes: number) => {
@@ -131,9 +151,12 @@ const Dashboard = () => {
 
   if (!activeConnection) {
     return (
-      <Box display="flex" justifyContent="center" alignItems="center" height="100%">
+      <Box display="flex" flexDirection="column" justifyContent="center" alignItems="center" height="100%" gap={2}>
         <Typography variant="h6" color="text.secondary">
           No active Redis connection
+        </Typography>
+        <Typography variant="body2" color="text.secondary" textAlign="center">
+          Please connect to a Redis server from the Connections tab to view the dashboard.
         </Typography>
       </Box>
     );

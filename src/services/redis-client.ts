@@ -119,32 +119,52 @@ class RedisClientService {
 
   async getStats(): Promise<RedisStats | null> {
     try {
-      const response = await fetch(`${this.baseUrl}/stats`);
+      const response = await fetch(`${this.baseUrl}/stats`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        signal: AbortSignal.timeout(10000), // 10 seconds timeout
+      });
       
       if (!response.ok) {
-        throw new Error('Failed to fetch stats');
+        throw new Error(`Failed to fetch stats: ${response.status} ${response.statusText}`);
       }
 
       const result = await response.json();
       return result.stats;
     } catch (error) {
-      console.error('Error getting stats:', error);
+      if (error instanceof Error) {
+        console.error('Error fetching stats:', error.message);
+      } else {
+        console.error('Error fetching stats:', error);
+      }
       return null;
     }
   }
 
   async getInfo(): Promise<RedisInfo | null> {
     try {
-      const response = await fetch(`${this.baseUrl}/info`);
+      const response = await fetch(`${this.baseUrl}/info`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        signal: AbortSignal.timeout(10000), // 10 seconds timeout
+      });
       
       if (!response.ok) {
-        throw new Error('Failed to fetch info');
+        throw new Error(`Failed to fetch info: ${response.status} ${response.statusText}`);
       }
 
       const result = await response.json();
       return result.info;
     } catch (error) {
-      console.error('Error getting info:', error);
+      if (error instanceof Error) {
+        console.error('Error getting info:', error.message);
+      } else {
+        console.error('Error getting info:', error);
+      }
       return null;
     }
   }
