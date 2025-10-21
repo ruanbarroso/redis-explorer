@@ -1,3 +1,15 @@
+## [1.1.0](https://github.com/ruanbarroso/redis-explorer/compare/v1.0.1...v1.1.0) (2025-10-21)
+
+### 🚀 Features
+
+* limpa workflows e foca em solução que funciona ([1d66330](https://github.com/ruanbarroso/redis-explorer/commit/1d663301acad0bca2c41c1f7dde50fed81473617))
+* testa semantic-release após tag inicial v1.0.1 ([ec8ac6a](https://github.com/ruanbarroso/redis-explorer/commit/ec8ac6affb32a5feaee0e9136bb45514c1ca4f1f))
+
+### 🐛 Bug Fixes
+
+* adiciona dependência conventional-changelog-conventionalcommits ([6ce92a9](https://github.com/ruanbarroso/redis-explorer/commit/6ce92a96f9ab6b7efeb7360407492cc859c2cb6d))
+* cria workflow básico para resolver falhas de dependências ([35123af](https://github.com/ruanbarroso/redis-explorer/commit/35123af6028aa2d7724fdaa8745512e418b6e886))
+
 # Changelog
 
 All notable changes to this project will be documented in this file.
