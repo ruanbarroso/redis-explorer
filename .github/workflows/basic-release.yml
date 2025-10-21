@@ -29,6 +29,7 @@ jobs:
         npm install -g @semantic-release/changelog
         npm install -g @semantic-release/git
         npm install -g @semantic-release/github
+        npm install -g conventional-changelog-conventionalcommits
 
     - name: Semantic Release
       run: npx semantic-release
