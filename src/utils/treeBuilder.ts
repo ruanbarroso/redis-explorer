@@ -12,13 +12,13 @@ export class TreeBuilder {
     const root: { [key: string]: TreeNode } = {};
     
     keys.forEach(key => {
-      this.insertKey(root, key);
+      this.addKeyToTree(key, root);
     });
 
     return this.sortNodes(Object.values(root));
   }
 
-  private insertKey(root: { [key: string]: TreeNode }, key: RedisKey): void {
+  private addKeyToTree(key: RedisKey, root: { [key: string]: TreeNode }): void {
     const parts = key.name.split(this.separator);
     let currentLevel = root;
     let currentPath = '';
@@ -44,10 +44,15 @@ export class TreeBuilder {
         // Ensure it's a folder if we're not at the last part
         if (currentLevel[part].type === 'key') {
           currentLevel[part].type = 'folder';
-          currentLevel[part].children = currentLevel[part].children || [];
+          currentLevel[part].children = [];
           currentLevel[part].keyData = undefined;
         }
-        currentLevel = currentLevel[part].children as { [key: string]: TreeNode };
+        
+        // Create childrenMap for building if it doesn't exist
+        if (!(currentLevel[part] as any).childrenMap) {
+          (currentLevel[part] as any).childrenMap = {};
+        }
+        currentLevel = (currentLevel[part] as any).childrenMap;
       }
     });
   }
@@ -56,9 +61,9 @@ export class TreeBuilder {
     return nodes
       .map(node => ({
         ...node,
-        children: node.children 
-          ? this.sortNodes(Object.values(node.children))
-          : undefined
+        children: (node as any).childrenMap 
+          ? this.sortNodes(Object.values((node as any).childrenMap))
+          : node.children
       }))
       .sort((a, b) => {
         // Folders first, then keys
