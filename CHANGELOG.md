@@ -1,3 +1,9 @@
+## [1.2.0](https://github.com/ruanbarroso/redis-explorer/compare/v1.1.0...v1.2.0) (2025-10-21)
+
+### 🚀 Features
+
+* integra Docker Hub com semantic versioning automatico ([8267032](https://github.com/ruanbarroso/redis-explorer/commit/82670323a707d3e333b0e11cd2f033b445004e84))
+
 ## [1.1.0](https://github.com/ruanbarroso/redis-explorer/compare/v1.0.1...v1.1.0) (2025-10-21)
 
 ### 🚀 Features
