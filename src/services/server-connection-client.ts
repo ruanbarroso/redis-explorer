@@ -6,10 +6,16 @@ class ServerConnectionClient {
   // Load all connections from server
   async loadConnections(): Promise<RedisConnection[]> {
     try {
-      console.log('ServerConnectionClient: Loading connections from', this.baseUrl);
-      const response = await fetch(this.baseUrl);
-      console.log('ServerConnectionClient: Response status:', response.status);
+      const response = await fetch(this.baseUrl, {
+        credentials: 'include',
+      });
       
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('ServerConnectionClient: HTTP Error:', response.status, errorText);
+        throw new Error(`HTTP ${response.status}: ${errorText}`);
+      }
+
       const result = await response.json();
       console.log('ServerConnectionClient: Response data:', result);
       
@@ -34,6 +40,7 @@ class ServerConnectionClient {
         headers: {
           'Content-Type': 'application/json',
         },
+        credentials: 'include',
         body: JSON.stringify(connection),
       });
 
@@ -53,6 +60,7 @@ class ServerConnectionClient {
         headers: {
           'Content-Type': 'application/json',
         },
+        credentials: 'include',
         body: JSON.stringify(connection),
       });
 
@@ -69,6 +77,7 @@ class ServerConnectionClient {
     try {
       const response = await fetch(`${this.baseUrl}/${connectionId}`, {
         method: 'DELETE',
+        credentials: 'include',
       });
 
       const result = await response.json();
@@ -84,6 +93,7 @@ class ServerConnectionClient {
     try {
       const response = await fetch(this.baseUrl, {
         method: 'DELETE',
+        credentials: 'include',
       });
 
       const result = await response.json();
@@ -97,7 +107,9 @@ class ServerConnectionClient {
   // Export connections from server
   async exportConnections(): Promise<void> {
     try {
-      const response = await fetch(`${this.baseUrl}/export`);
+      const response = await fetch(`${this.baseUrl}/export`, {
+        credentials: 'include',
+      });
       
       if (response.ok) {
         const blob = await response.blob();
@@ -132,6 +144,7 @@ class ServerConnectionClient {
         headers: {
           'Content-Type': 'application/json',
         },
+        credentials: 'include',
         body: JSON.stringify({ connections }),
       });
 

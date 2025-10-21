@@ -1,10 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { serverConnectionStorage } from '@/services/connection-storage';
 import { RedisConnection } from '@/types/redis';
+import { verifyAuthToken } from '@/utils/auth';
 
 // GET /api/connections - Load all saved connections
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
+    // Verificar autenticação
+    if (!verifyAuthToken(request)) {
+      return NextResponse.json(
+        { error: 'Authentication required' },
+        { status: 401 }
+      );
+    }
+
     const connections = serverConnectionStorage.loadConnections();
     return NextResponse.json({ success: true, connections });
   } catch (error) {
@@ -18,6 +27,14 @@ export async function GET() {
 // POST /api/connections - Add a new connection
 export async function POST(request: NextRequest) {
   try {
+    // Verificar autenticação
+    if (!verifyAuthToken(request)) {
+      return NextResponse.json(
+        { error: 'Authentication required' },
+        { status: 401 }
+      );
+    }
+
     const connection: RedisConnection = await request.json();
     
     // Validate required fields
@@ -49,6 +66,14 @@ export async function POST(request: NextRequest) {
 // PUT /api/connections - Update an existing connection
 export async function PUT(request: NextRequest) {
   try {
+    // Verificar autenticação
+    if (!verifyAuthToken(request)) {
+      return NextResponse.json(
+        { error: 'Authentication required' },
+        { status: 401 }
+      );
+    }
+
     const connection: RedisConnection = await request.json();
     
     if (!connection.id) {
@@ -77,8 +102,16 @@ export async function PUT(request: NextRequest) {
 }
 
 // DELETE /api/connections - Clear all connections
-export async function DELETE() {
+export async function DELETE(request: NextRequest) {
   try {
+    // Verificar autenticação
+    if (!verifyAuthToken(request)) {
+      return NextResponse.json(
+        { error: 'Authentication required' },
+        { status: 401 }
+      );
+    }
+
     const success = serverConnectionStorage.clearAllConnections();
     
     if (success) {

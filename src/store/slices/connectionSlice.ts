@@ -24,16 +24,22 @@ export const loadConnections = createAsyncThunk(
       const connections = await serverConnectionClient.loadConnections();
       console.log('Loaded connections:', connections);
       
-      // Try to migrate from localStorage on first load
-      try {
-        await serverConnectionClient.migrateFromLocalStorage();
-      } catch (migrationError) {
-        console.warn('Migration failed:', migrationError);
-      }
-      
       return connections;
     } catch (error) {
       console.error('Failed to load connections:', error);
+      throw error;
+    }
+  }
+);
+
+export const migrateFromLocalStorage = createAsyncThunk(
+  'connection/migrateFromLocalStorage',
+  async () => {
+    try {
+      const success = await serverConnectionClient.migrateFromLocalStorage();
+      return success;
+    } catch (error) {
+      console.error('Failed to migrate from localStorage:', error);
       throw error;
     }
   }

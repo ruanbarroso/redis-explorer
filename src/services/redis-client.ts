@@ -10,6 +10,7 @@ class RedisClientService {
         headers: {
           'Content-Type': 'application/json',
         },
+        credentials: 'include',
         body: JSON.stringify(connection),
       });
 
@@ -25,6 +26,7 @@ class RedisClientService {
     try {
       const response = await fetch(`${this.baseUrl}/disconnect`, {
         method: 'POST',
+        credentials: 'include',
       });
 
       const result = await response.json();
@@ -37,7 +39,9 @@ class RedisClientService {
 
   async ping(): Promise<boolean> {
     try {
-      const response = await fetch(`${this.baseUrl}/ping`);
+      const response = await fetch(`${this.baseUrl}/ping`, {
+        credentials: 'include',
+      });
       const result = await response.json();
       return result.success;
     } catch (error) {
@@ -48,7 +52,8 @@ class RedisClientService {
   async getKeys(pattern: string = '*', count: number = 100): Promise<RedisKey[]> {
     try {
       const response = await fetch(
-        `${this.baseUrl}/keys?pattern=${encodeURIComponent(pattern)}&count=${count}`
+        `${this.baseUrl}/keys?pattern=${encodeURIComponent(pattern)}&count=${count}`,
+        { credentials: 'include' }
       );
 
       if (!response.ok) {
@@ -66,7 +71,8 @@ class RedisClientService {
   async getValue(key: string): Promise<RedisValue | null> {
     try {
       const response = await fetch(
-        `${this.baseUrl}/value?key=${encodeURIComponent(key)}`
+        `${this.baseUrl}/value?key=${encodeURIComponent(key)}`,
+        { credentials: 'include' }
       );
 
       if (!response.ok) {
@@ -88,6 +94,7 @@ class RedisClientService {
         headers: {
           'Content-Type': 'application/json',
         },
+        credentials: 'include',
         body: JSON.stringify({ key, value, type, ttl }),
       });
 
@@ -106,6 +113,7 @@ class RedisClientService {
         headers: {
           'Content-Type': 'application/json',
         },
+        credentials: 'include',
         body: JSON.stringify({ key }),
       });
 
@@ -124,6 +132,7 @@ class RedisClientService {
         headers: {
           'Content-Type': 'application/json',
         },
+        credentials: 'include',
         signal: AbortSignal.timeout(10000), // 10 seconds timeout
       });
       
@@ -150,6 +159,7 @@ class RedisClientService {
         headers: {
           'Content-Type': 'application/json',
         },
+        credentials: 'include',
         signal: AbortSignal.timeout(10000), // 10 seconds timeout
       });
       
@@ -171,7 +181,9 @@ class RedisClientService {
 
   async getSlowLog(count: number = 10): Promise<SlowLogEntry[]> {
     try {
-      const response = await fetch(`${this.baseUrl}/slowlog?count=${count}`);
+      const response = await fetch(`${this.baseUrl}/slowlog?count=${count}`, {
+        credentials: 'include',
+      });
       
       if (!response.ok) {
         throw new Error('Failed to fetch slow log');
@@ -192,6 +204,7 @@ class RedisClientService {
         headers: {
           'Content-Type': 'application/json',
         },
+        credentials: 'include',
         body: JSON.stringify({ command }),
       });
 

@@ -43,12 +43,14 @@ import {
   disconnectFromRedis,
   testConnection,
   loadConnections,
+  migrateFromLocalStorage,
   saveConnection,
   updateConnectionOnServer,
   removeConnectionFromServer,
 } from '@/store/slices/connectionSlice';
 import { serverConnectionClient } from '@/services/server-connection-client';
 import { RedisConnection } from '@/types/redis';
+import { useAuth } from '@/hooks/useAuth';
 import { v4 as uuidv4 } from 'uuid';
 
 interface ConnectionManagerProps {
@@ -60,6 +62,7 @@ const ConnectionManager = ({ onConnectionSuccess }: ConnectionManagerProps = {})
   const { connections, activeConnection, isConnecting, error } = useSelector(
     (state: RootState) => state.connection
   );
+  const { isAuthenticated, isHydrated } = useAuth();
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingConnection, setEditingConnection] = useState<RedisConnection | null>(null);
@@ -72,11 +75,27 @@ const ConnectionManager = ({ onConnectionSuccess }: ConnectionManagerProps = {})
     ssl: false,
   });
   const [testResult, setTestResult] = useState<{ success: boolean; message: string } | null>(null);
+  const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
 
-  // Load connections from server on component mount
+  // Load connections from server only when authenticated
   useEffect(() => {
-    dispatch(loadConnections());
-  }, [dispatch]);
+    // Adiciona um pequeno delay para garantir que o cookie esteja disponível
+    if (isHydrated && isAuthenticated && !hasLoadedOnce) {
+      const timeoutId = setTimeout(() => {
+        dispatch(loadConnections()).then(() => {
+          // Try to migrate from localStorage after first successful load
+          dispatch(migrateFromLocalStorage()).catch(error => {
+            console.warn('Migration failed:', error);
+          });
+          setHasLoadedOnce(true);
+        }).catch(error => {
+          console.error('Failed to load connections:', error);
+        });
+      }, 100); // Pequeno delay de 100ms
+
+      return () => clearTimeout(timeoutId);
+    }
+  }, [dispatch, isHydrated, isAuthenticated, hasLoadedOnce]);
 
   const handleOpenDialog = (connection?: RedisConnection) => {
     if (connection) {
