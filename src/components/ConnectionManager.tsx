@@ -293,68 +293,92 @@ const ConnectionManager = ({ onConnectionSuccess }: ConnectionManagerProps = {})
                   No connections configured. Add a connection to get started.
                 </Typography>
               ) : (
-                <List>
-                  {connections.map((connection) => (
-                    <ListItem key={connection.id} divider>
-                      <ListItemText
-                        primary={
-                          <Box display="flex" alignItems="center" gap={1}>
-                            <Typography variant="subtitle1">
-                              {connection.name}
-                            </Typography>
-                            {connection.connected && (
-                              <Chip
-                                label="Connected"
+                <Box
+                  sx={{
+                    maxHeight: 'calc(100vh - 280px)',
+                    overflow: 'auto',
+                    '&::-webkit-scrollbar': {
+                      width: '8px',
+                    },
+                    '&::-webkit-scrollbar-track': {
+                      background: '#f1f1f1',
+                      borderRadius: '4px',
+                    },
+                    '&::-webkit-scrollbar-thumb': {
+                      background: '#888',
+                      borderRadius: '4px',
+                    },
+                    '&::-webkit-scrollbar-thumb:hover': {
+                      background: '#555',
+                    },
+                  }}
+                >
+                  <List>
+                    {connections.map((connection, index) => (
+                      <ListItem 
+                        key={connection.id} 
+                        divider={index < connections.length - 1}
+                      >
+                        <ListItemText
+                          primary={
+                            <Box display="flex" alignItems="center" gap={1}>
+                              <Typography variant="subtitle1">
+                                {connection.name}
+                              </Typography>
+                              {connection.connected && (
+                                <Chip
+                                  label="Connected"
+                                  color="success"
+                                  size="small"
+                                />
+                              )}
+                              {activeConnection?.id === connection.id && (
+                                <Chip
+                                  label="Active"
+                                  color="primary"
+                                  size="small"
+                                />
+                              )}
+                            </Box>
+                          }
+                          secondary={`${connection.host}:${connection.port} (DB: ${connection.database || 0})`}
+                        />
+                        <ListItemSecondaryAction>
+                          <Box display="flex" gap={1}>
+                            {activeConnection?.id === connection.id ? (
+                              <IconButton
+                                onClick={() => handleDisconnect(connection.id)}
+                                color="error"
+                                disabled={isConnecting}
+                              >
+                                <DisconnectIcon />
+                              </IconButton>
+                            ) : (
+                              <IconButton
+                                onClick={() => handleConnect(connection)}
                                 color="success"
-                                size="small"
-                              />
+                                disabled={isConnecting}
+                              >
+                                <ConnectIcon />
+                              </IconButton>
                             )}
-                            {activeConnection?.id === connection.id && (
-                              <Chip
-                                label="Active"
-                                color="primary"
-                                size="small"
-                              />
-                            )}
-                          </Box>
-                        }
-                        secondary={`${connection.host}:${connection.port} (DB: ${connection.database || 0})`}
-                      />
-                      <ListItemSecondaryAction>
-                        <Box display="flex" gap={1}>
-                          {activeConnection?.id === connection.id ? (
                             <IconButton
-                              onClick={() => handleDisconnect(connection.id)}
+                              onClick={() => handleOpenDialog(connection)}
+                            >
+                              <EditIcon />
+                            </IconButton>
+                            <IconButton
+                              onClick={() => handleDelete(connection.id)}
                               color="error"
-                              disabled={isConnecting}
                             >
-                              <DisconnectIcon />
+                              <DeleteIcon />
                             </IconButton>
-                          ) : (
-                            <IconButton
-                              onClick={() => handleConnect(connection)}
-                              color="success"
-                              disabled={isConnecting}
-                            >
-                              <ConnectIcon />
-                            </IconButton>
-                          )}
-                          <IconButton
-                            onClick={() => handleOpenDialog(connection)}
-                          >
-                            <EditIcon />
-                          </IconButton>
-                          <IconButton
-                            onClick={() => handleDelete(connection.id)}
-                            color="error"
-                          >
-                            <DeleteIcon />
-                          </IconButton>
-                        </Box>
-                      </ListItemSecondaryAction>
-                    </ListItem>
-                  ))}
-                </List>
+                          </Box>
+                        </ListItemSecondaryAction>
+                      </ListItem>
+                    ))}
+                  </List>
+                </Box>
               )}
             </CardContent>
           </Card>
