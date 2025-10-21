@@ -1,3 +1,9 @@
+## [1.2.4](https://github.com/ruanbarroso/redis-explorer/compare/v1.2.3...v1.2.4) (2025-10-21)
+
+### 🐛 Bug Fixes
+
+* resolve login issue in production by making cookie secure attribute configurable ([f8a835b](https://github.com/ruanbarroso/redis-explorer/commit/f8a835befa7181898c6ef1921fc670375696134e))
+
 ## [1.2.3](https://github.com/ruanbarroso/redis-explorer/compare/v1.2.2...v1.2.3) (2025-10-21)
 
 ### 🐛 Bug Fixes
