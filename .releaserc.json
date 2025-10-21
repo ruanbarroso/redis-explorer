@@ -50,13 +50,6 @@
       }
     ],
     [
-      "@semantic-release/exec",
-      {
-        "prepareCmd": "echo 'VERSION=${nextRelease.version}' >> $GITHUB_ENV",
-        "publishCmd": "docker buildx build --platform linux/amd64 --push -t ruanbarroso/redis-explorer:${nextRelease.version} -t ruanbarroso/redis-explorer:latest ."
-      }
-    ],
-    [
       "@semantic-release/github",
       {
         "assets": [
