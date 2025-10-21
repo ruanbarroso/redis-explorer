@@ -109,22 +109,36 @@ jobs:
     - name: Build application
       run: yarn build
 
-    - name: Build Docker image
-      run: |
-        docker build -t redis-explorer:latest .
-        docker tag redis-explorer:latest redis-explorer:${{ github.sha }}
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
 
-    - name: Deploy to staging
-      if: github.ref == 'refs/heads/develop'
-      run: |
-        echo "Deploy to staging environment"
-        # Add your staging deployment commands here
+    - name: Login to Docker Hub
+      uses: docker/login-action@v3
+      with:
+        username: ${{ secrets.DOCKER_USERNAME }}
+        password: ${{ secrets.DOCKER_PASSWORD }}
 
-    - name: Deploy to production
-      if: github.ref == 'refs/heads/main'
-      run: |
-        echo "Deploy to production environment"
-        # Add your production deployment commands here
+    - name: Extract metadata
+      id: meta
+      uses: docker/metadata-action@v5
+      with:
+        images: ruanbarroso/redis-explorer
+        tags: |
+          type=ref,event=branch
+          type=ref,event=pr
+          type=sha,prefix={{branch}}-
+          type=raw,value=latest,enable={{is_default_branch}}
+
+    - name: Build and push Docker image
+      uses: docker/build-push-action@v5
+      with:
+        context: .
+        platforms: linux/amd64,linux/arm64
+        push: true
+        tags: ${{ steps.meta.outputs.tags }}
+        labels: ${{ steps.meta.outputs.labels }}
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
 
   release:
     needs: [test, security]
@@ -147,12 +161,59 @@ jobs:
     - name: Build application
       run: yarn build
 
-    - name: Create Release
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: Login to Docker Hub
+      uses: docker/login-action@v3
+      with:
+        username: ${{ secrets.DOCKER_USERNAME }}
+        password: ${{ secrets.DOCKER_PASSWORD }}
+
+    - name: Extract version from tag
+      id: version
+      run: echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+
+    - name: Build and push release Docker image
+      uses: docker/build-push-action@v5
+      with:
+        context: .
+        platforms: linux/amd64,linux/arm64
+        push: true
+        tags: |
+          ruanbarroso/redis-explorer:${{ steps.version.outputs.VERSION }}
+          ruanbarroso/redis-explorer:latest
+        labels: |
+          org.opencontainers.image.title=Redis Explorer
+          org.opencontainers.image.description=Modern Redis GUI Explorer
+          org.opencontainers.image.version=${{ steps.version.outputs.VERSION }}
+          org.opencontainers.image.source=https://github.com/ruanbarroso/redis-explorer
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+
+    - name: Create GitHub Release
       uses: actions/create-release@v1
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         tag_name: ${{ github.ref }}
-        release_name: Release ${{ github.ref }}
+        release_name: Redis Explorer ${{ steps.version.outputs.VERSION }}
+        body: |
+          ## 🚀 Redis Explorer ${{ steps.version.outputs.VERSION }}
+          
+          ### 🐳 Docker Images
+          - `docker pull ruanbarroso/redis-explorer:${{ steps.version.outputs.VERSION }}`
+          - `docker pull ruanbarroso/redis-explorer:latest`
+          
+          ### 📦 Multi-platform Support
+          - linux/amd64
+          - linux/arm64
+          
+          ### 🔧 Quick Start
+          ```bash
+          docker run -d -p 3000:3000 ruanbarroso/redis-explorer:${{ steps.version.outputs.VERSION }}
+          ```
+          
+          Or use docker-compose from the repository.
         draft: false
         prerelease: false

@@ -97,11 +97,31 @@ A modern, web-based Redis GUI explorer built with Next.js 15 and React 19. This 
 
 ## Docker Installation
 
-### Using Docker Compose (Recommended)
+### 🐳 Using Docker Hub (Recommended)
+
+**Quick Start:**
+```bash
+# Run Redis Explorer with Docker Hub image
+docker run -d --name redis-explorer -p 3000:3000 ruanbarroso/redis-explorer:latest
+
+# Or with specific version
+docker run -d --name redis-explorer -p 3000:3000 ruanbarroso/redis-explorer:v1.0.0
+```
+
+**With Redis server:**
+```bash
+# Start Redis server
+docker run -d --name redis -p 6379:6379 redis:7-alpine
+
+# Start Redis Explorer (linked to Redis)
+docker run -d --name redis-explorer -p 3000:3000 --link redis:redis ruanbarroso/redis-explorer:latest
+```
+
+### Using Docker Compose
 
 1. **Clone the repository**
    ```bash
-   git clone <repository-url>
+   git clone https://github.com/ruanbarroso/redis-explorer.git
    cd redis-explorer
    ```
 
@@ -115,17 +135,14 @@ A modern, web-based Redis GUI explorer built with Next.js 15 and React 19. This 
    - Redis server on port 6379
    - Redis with auth on port 6380 (password: `mypassword`)
 
-### Using Docker only
+### Build from Source
 
-1. **Run Redis server**
+1. **Clone and build**
    ```bash
-   docker run -d --name redis -p 6379:6379 redis:7-alpine
-   ```
-
-2. **Build and run Redis Explorer**
-   ```bash
+   git clone https://github.com/ruanbarroso/redis-explorer.git
+   cd redis-explorer
    docker build -t redis-explorer .
-   docker run -d --name redis-explorer -p 3000:3000 --link redis:redis redis-explorer
+   docker run -d --name redis-explorer -p 3000:3000 redis-explorer
    ```
 
 ## Usage
