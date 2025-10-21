@@ -1,3 +1,9 @@
+## [1.2.5](https://github.com/ruanbarroso/redis-explorer/compare/v1.2.4...v1.2.5) (2025-10-21)
+
+### 🐛 Bug Fixes
+
+* limpar estado das keys ao trocar conexões Redis ([f03d5c8](https://github.com/ruanbarroso/redis-explorer/commit/f03d5c8aca92e2f0e97de038c5dffc7ebdc701c1))
+
 ## [1.2.4](https://github.com/ruanbarroso/redis-explorer/compare/v1.2.3...v1.2.4) (2025-10-21)
 
 ### 🐛 Bug Fixes
