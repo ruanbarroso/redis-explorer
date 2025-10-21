@@ -2,7 +2,31 @@
   "name": "redis-explorer",
   "version": "1.0.0",
   "description": "Modern Redis GUI Explorer - Alternative to RedisInsight",
-  "private": true,
+  "private": false,
+  "author": "Redis Explorer Contributors",
+  "license": "MIT",
+  "homepage": "https://github.com/your-username/redis-explorer#readme",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/your-username/redis-explorer.git"
+  },
+  "bugs": {
+    "url": "https://github.com/your-username/redis-explorer/issues"
+  },
+  "keywords": [
+    "redis",
+    "gui",
+    "explorer",
+    "database",
+    "admin",
+    "nextjs",
+    "react",
+    "typescript",
+    "redis-client",
+    "redis-gui",
+    "redis-admin",
+    "redis-manager"
+  ],
   "scripts": {
     "dev": "next dev --turbo",
     "build": "next build",

@@ -1,6 +1,15 @@
 # Redis Explorer
 
+[![CI/CD Pipeline](https://github.com/your-username/redis-explorer/workflows/CI/CD%20Pipeline/badge.svg)](https://github.com/your-username/redis-explorer/actions)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![TypeScript](https://img.shields.io/badge/%3C%2F%3E-TypeScript-%230074c1.svg)](http://www.typescriptlang.org/)
+[![Next.js](https://img.shields.io/badge/Next.js-15-black)](https://nextjs.org/)
+[![React](https://img.shields.io/badge/React-19-blue)](https://reactjs.org/)
+[![Redis](https://img.shields.io/badge/Redis-Compatible-red)](https://redis.io/)
+
 A modern, web-based Redis GUI explorer built with Next.js 15 and React 19. This tool provides a comprehensive interface for managing Redis databases, similar to RedisInsight but with a focus on performance and user experience.
+
+> 🎉 **Now Open Source!** We're excited to share Redis Explorer with the community. Contributions are welcome!
 
 ## Features
 
@@ -85,6 +94,39 @@ A modern, web-based Redis GUI explorer built with Next.js 15 and React 19. This 
 
 5. **Open your browser**
    Navigate to [http://localhost:3000](http://localhost:3000)
+
+## Docker Installation
+
+### Using Docker Compose (Recommended)
+
+1. **Clone the repository**
+   ```bash
+   git clone <repository-url>
+   cd redis-explorer
+   ```
+
+2. **Start with Docker Compose**
+   ```bash
+   docker-compose up -d
+   ```
+
+   This will start:
+   - Redis Explorer on [http://localhost:3000](http://localhost:3000)
+   - Redis server on port 6379
+   - Redis with auth on port 6380 (password: `mypassword`)
+
+### Using Docker only
+
+1. **Run Redis server**
+   ```bash
+   docker run -d --name redis -p 6379:6379 redis:7-alpine
+   ```
+
+2. **Build and run Redis Explorer**
+   ```bash
+   docker build -t redis-explorer .
+   docker run -d --name redis-explorer -p 3000:3000 --link redis:redis redis-explorer
+   ```
 
 ## Usage
 

@@ -1,0 +1,43 @@
+version: '3.8'
+
+services:
+  redis-explorer:
+    build: .
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+    depends_on:
+      - redis
+    networks:
+      - redis-network
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes
+    networks:
+      - redis-network
+
+  redis-with-auth:
+    image: redis:7-alpine
+    ports:
+      - "6380:6379"
+    volumes:
+      - redis_auth_data:/data
+    command: redis-server --appendonly yes --requirepass mypassword
+    networks:
+      - redis-network
+
+volumes:
+  redis_data:
+  redis_auth_data:
+
+networks:
+  redis-network:
+    driver: bridge
