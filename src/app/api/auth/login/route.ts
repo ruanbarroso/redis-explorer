@@ -66,7 +66,7 @@ export async function POST(request: NextRequest) {
 
     response.cookies.set('auth-token', token, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
+      secure: process.env.FORCE_HTTPS === 'true' || (process.env.NODE_ENV === 'production' && process.env.DISABLE_SECURE_COOKIE !== 'true'),
       sameSite: 'lax', // Mudando para 'lax' para funcionar melhor em desenvolvimento
       maxAge: 24 * 60 * 60, // 24 horas
       path: '/', // Garantindo que o cookie seja válido para todo o site
