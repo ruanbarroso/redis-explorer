@@ -1,3 +1,9 @@
+## [1.2.3](https://github.com/ruanbarroso/redis-explorer/compare/v1.2.2...v1.2.3) (2025-10-21)
+
+### 🐛 Bug Fixes
+
+* remove ARM64 platform para evitar timeout de rede ([393f5a0](https://github.com/ruanbarroso/redis-explorer/commit/393f5a04c1f594f68352aa5f9deeb9bc5bdf267e))
+
 ## [1.2.2](https://github.com/ruanbarroso/redis-explorer/compare/v1.2.1...v1.2.2) (2025-10-21)
 
 ### 🐛 Bug Fixes

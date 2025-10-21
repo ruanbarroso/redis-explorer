@@ -1,6 +1,6 @@
 {
   "name": "redis-explorer",
-  "version": "1.2.2",
+  "version": "1.2.3",
   "description": "Modern Redis GUI Explorer - Alternative to RedisInsight",
   "private": false,
   "author": "Redis Explorer Contributors",
