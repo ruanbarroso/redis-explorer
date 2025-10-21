@@ -1,0 +1,79 @@
+{
+  "branches": ["main"],
+  "plugins": [
+    [
+      "@semantic-release/commit-analyzer",
+      {
+        "preset": "conventionalcommits",
+        "releaseRules": [
+          { "type": "feat", "release": "minor" },
+          { "type": "fix", "release": "patch" },
+          { "type": "perf", "release": "patch" },
+          { "type": "revert", "release": "patch" },
+          { "type": "docs", "release": false },
+          { "type": "style", "release": false },
+          { "type": "chore", "release": false },
+          { "type": "refactor", "release": "patch" },
+          { "type": "test", "release": false },
+          { "type": "build", "release": false },
+          { "type": "ci", "release": false },
+          { "breaking": true, "release": "major" }
+        ]
+      }
+    ],
+    [
+      "@semantic-release/release-notes-generator",
+      {
+        "preset": "conventionalcommits",
+        "presetConfig": {
+          "types": [
+            { "type": "feat", "section": "🚀 Features" },
+            { "type": "fix", "section": "🐛 Bug Fixes" },
+            { "type": "perf", "section": "⚡ Performance Improvements" },
+            { "type": "revert", "section": "⏪ Reverts" },
+            { "type": "refactor", "section": "♻️ Code Refactoring" },
+            { "type": "security", "section": "🔒 Security" }
+          ]
+        }
+      }
+    ],
+    [
+      "@semantic-release/changelog",
+      {
+        "changelogFile": "CHANGELOG.md"
+      }
+    ],
+    [
+      "@semantic-release/npm",
+      {
+        "npmPublish": false
+      }
+    ],
+    [
+      "@semantic-release/exec",
+      {
+        "prepareCmd": "echo 'VERSION=${nextRelease.version}' >> $GITHUB_ENV",
+        "publishCmd": "docker buildx build --platform linux/amd64,linux/arm64 --push -t ruanbarroso/redis-explorer:${nextRelease.version} -t ruanbarroso/redis-explorer:latest ."
+      }
+    ],
+    [
+      "@semantic-release/github",
+      {
+        "assets": [
+          {
+            "path": "CHANGELOG.md",
+            "label": "Changelog"
+          }
+        ],
+        "releaseBodyTemplate": "## 🚀 Redis Explorer v{{version}}\n\n### 🐳 Docker Images\n- `docker pull ruanbarroso/redis-explorer:{{version}}`\n- `docker pull ruanbarroso/redis-explorer:latest`\n\n### 📦 Multi-platform Support\n- linux/amd64\n- linux/arm64\n\n### 🔧 Quick Start\n```bash\ndocker run -d -p 3000:3000 ruanbarroso/redis-explorer:{{version}}\n```\n\n{{notes}}"
+      }
+    ],
+    [
+      "@semantic-release/git",
+      {
+        "assets": ["package.json", "CHANGELOG.md"],
+        "message": "chore(release): ${nextRelease.version} [skip ci]\n\n${nextRelease.notes}"
+      }
+    ]
+  ]
+}
