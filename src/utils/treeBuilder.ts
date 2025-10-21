@@ -1,6 +1,10 @@
 import { RedisKey } from '@/types/redis';
 import { TreeNode } from '@/types/tree';
 
+interface BuildNode extends TreeNode {
+  childrenMap?: { [key: string]: BuildNode };
+}
+
 export class TreeBuilder {
   private separator: string;
 
@@ -9,16 +13,16 @@ export class TreeBuilder {
   }
 
   buildTree(keys: RedisKey[]): TreeNode[] {
-    const root: { [key: string]: TreeNode } = {};
+    const root: { [key: string]: BuildNode } = {};
     
     keys.forEach(key => {
       this.addKeyToTree(key, root);
     });
 
-    return this.sortNodes(Object.values(root));
+    return this.convertAndSort(Object.values(root));
   }
 
-  private addKeyToTree(key: RedisKey, root: { [key: string]: TreeNode }): void {
+  private addKeyToTree(key: RedisKey, root: { [key: string]: BuildNode }): void {
     const parts = key.name.split(this.separator);
     let currentLevel = root;
     let currentPath = '';
@@ -33,10 +37,11 @@ export class TreeBuilder {
           name: part,
           fullPath: currentPath,
           type: isLast ? 'key' : 'folder',
-          children: isLast ? undefined : [],
+          children: undefined,
           keyData: isLast ? key : undefined,
           expanded: false,
           level: index,
+          childrenMap: isLast ? undefined : {},
         };
       }
 
@@ -44,26 +49,28 @@ export class TreeBuilder {
         // Ensure it's a folder if we're not at the last part
         if (currentLevel[part].type === 'key') {
           currentLevel[part].type = 'folder';
-          currentLevel[part].children = [];
           currentLevel[part].keyData = undefined;
+          currentLevel[part].childrenMap = {};
         }
         
-        // Create childrenMap for building if it doesn't exist
-        if (!(currentLevel[part] as any).childrenMap) {
-          (currentLevel[part] as any).childrenMap = {};
-        }
-        currentLevel = (currentLevel[part] as any).childrenMap;
+        currentLevel = currentLevel[part].childrenMap!;
       }
     });
   }
 
-  private sortNodes(nodes: TreeNode[]): TreeNode[] {
+  private convertAndSort(nodes: BuildNode[]): TreeNode[] {
     return nodes
       .map(node => ({
-        ...node,
-        children: (node as any).childrenMap 
-          ? this.sortNodes(Object.values((node as any).childrenMap))
-          : node.children
+        id: node.id,
+        name: node.name,
+        fullPath: node.fullPath,
+        type: node.type,
+        children: node.childrenMap 
+          ? this.convertAndSort(Object.values(node.childrenMap))
+          : undefined,
+        keyData: node.keyData,
+        expanded: node.expanded,
+        level: node.level,
       }))
       .sort((a, b) => {
         // Folders first, then keys
