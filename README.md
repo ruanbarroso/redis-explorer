@@ -1,6 +1,9 @@
 # Redis Explorer
 
-[![CI/CD Pipeline](https://github.com/your-username/redis-explorer/workflows/CI/CD%20Pipeline/badge.svg)](https://github.com/your-username/redis-explorer/actions)
+[![CI/CD Pipeline](https://github.com/ruanbarroso/redis-explorer/workflows/CI/CD%20Pipeline/badge.svg)](https://github.com/ruanbarroso/redis-explorer/actions)
+[![Docker Pulls](https://img.shields.io/docker/pulls/ruanbarroso/redis-explorer)](https://hub.docker.com/r/ruanbarroso/redis-explorer)
+[![Docker Image Size](https://img.shields.io/docker/image-size/ruanbarroso/redis-explorer/latest)](https://hub.docker.com/r/ruanbarroso/redis-explorer)
+[![GitHub Stars](https://img.shields.io/github/stars/ruanbarroso/redis-explorer)](https://github.com/ruanbarroso/redis-explorer/stargazers)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![TypeScript](https://img.shields.io/badge/%3C%2F%3E-TypeScript-%230074c1.svg)](http://www.typescriptlang.org/)
 [![Next.js](https://img.shields.io/badge/Next.js-15-black)](https://nextjs.org/)
@@ -10,6 +13,41 @@
 A modern, web-based Redis GUI explorer built with Next.js 15 and React 19. This tool provides a comprehensive interface for managing Redis databases, similar to RedisInsight but with a focus on performance and user experience.
 
 > 🎉 **Now Open Source!** We're excited to share Redis Explorer with the community. Contributions are welcome!
+
+## 📸 Screenshots
+
+### Dashboard Overview
+![Dashboard](https://via.placeholder.com/800x500/2D3748/FFFFFF?text=Redis+Dashboard+Screenshot)
+*Real-time Redis monitoring with performance metrics and connection status*
+
+### Key Browser
+![Key Browser](https://via.placeholder.com/800x500/2D3748/FFFFFF?text=Key+Browser+Screenshot)
+*Intuitive key browsing with tree view and search functionality*
+
+### Value Editor
+![Value Editor](https://via.placeholder.com/800x500/2D3748/FFFFFF?text=Value+Editor+Screenshot)
+*Advanced value editing with syntax highlighting for different data types*
+
+## 🚀 Quick Start
+
+**Try it now with Docker:**
+```bash
+docker run -d -p 3000:3000 ruanbarroso/redis-explorer:latest
+```
+Then open http://localhost:3000 in your browser!
+
+## 🆚 Why Redis Explorer?
+
+| Feature | Redis Explorer | RedisInsight | redis-cli |
+|---------|----------------|--------------|-----------|
+| **Web Interface** | ✅ Modern React UI | ✅ Desktop App | ❌ CLI Only |
+| **Real-time Monitoring** | ✅ Live Dashboard | ✅ Basic | ❌ Manual |
+| **Docker Ready** | ✅ Single Command | ⚠️ Complex Setup | ✅ Available |
+| **Open Source** | ✅ MIT License | ✅ SSPL | ✅ BSD |
+| **Performance** | ✅ Optimized | ⚠️ Heavy | ✅ Fast |
+| **Multi-Connection** | ✅ Unlimited | ✅ Limited | ❌ One at time |
+| **Tree View** | ✅ Smart Hierarchy | ✅ Basic | ❌ No |
+| **Value Editing** | ✅ Syntax Highlight | ✅ Basic | ⚠️ Limited |
 
 ## Features
 
@@ -273,16 +311,52 @@ src/
 - Ensure JavaScript is enabled
 - Try a different browser
 
+## 🗺️ Roadmap
+
+### ✅ Completed
+- [x] Multi-connection management
+- [x] Real-time dashboard
+- [x] Key browser with tree view
+- [x] Value editor with syntax highlighting
+- [x] CLI terminal integration
+- [x] Docker containerization
+- [x] CI/CD pipeline
+
+### 🚧 In Progress
+- [ ] Redis Cluster support
+- [ ] Import/Export functionality
+- [ ] Advanced search filters
+- [ ] Performance profiling
+
+### 📋 Planned
+- [ ] Redis Streams visualization
+- [ ] Pub/Sub message monitoring
+- [ ] Multi-language support (i18n)
+- [ ] Plugin system
+- [ ] Mobile responsive design
+- [ ] Dark/Light theme toggle
+
+## 📊 Project Status
+
+- **Development Status**: Active Development
+- **Stability**: Beta (Production Ready)
+- **Last Updated**: October 2025
+- **Maintainers**: 1 active maintainer
+- **Contributors**: Open for contributions!
+
 ## License
 
-This project is licensed under the MIT License - see the LICENSE file for details.
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
 ## Acknowledgments
 
-- Inspired by RedisInsight
-- Built with modern web technologies
-- Community-driven development
+- Built with [Next.js](https://nextjs.org/) and [React](https://reactjs.org/)
+- UI components from [Material-UI](https://mui.com/)
+- Redis client powered by [ioredis](https://github.com/luin/ioredis)
 
 ## Support
 
-For support, please open an issue on GitHub or contact the development team.
+- 🐛 **Issues**: [GitHub Issues](https://github.com/ruanbarroso/redis-explorer/issues)
+- 💬 **Discussions**: [GitHub Discussions](https://github.com/ruanbarroso/redis-explorer/discussions)
+- 📖 **Documentation**: [Wiki](https://github.com/ruanbarroso/redis-explorer/wiki)
+- 🐳 **Docker**: [Docker Hub](https://hub.docker.com/r/ruanbarroso/redis-explorer)
