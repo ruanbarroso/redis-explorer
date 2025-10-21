@@ -112,9 +112,14 @@ export default function Home() {
         {menuItems.map((item) => (
           <ListItem
             key={item.id}
-            selected={activeTab === item.id}
             onClick={() => setActiveTab(item.id as TabType)}
-            sx={{ cursor: 'pointer' }}
+            sx={{ 
+              cursor: 'pointer',
+              backgroundColor: activeTab === item.id ? 'action.selected' : 'transparent',
+              '&:hover': {
+                backgroundColor: 'action.hover'
+              }
+            }}
           >
             <ListItemIcon sx={{ color: 'inherit' }}>
               {item.icon}

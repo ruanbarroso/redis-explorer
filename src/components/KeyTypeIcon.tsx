@@ -29,7 +29,7 @@ export default function KeyTypeIcon({ type, fontSize = 'small' }: KeyTypeIconPro
       case 'set':
         return <SetIcon fontSize={fontSize} color="warning" />;
       case 'zset':
-        return <Sort fontSize={fontSize} color="info" />;
+        return <ZSetIcon fontSize={fontSize} color="info" />;
       case 'stream':
         return <StreamIcon fontSize={fontSize} color="error" />;
       case 'json':

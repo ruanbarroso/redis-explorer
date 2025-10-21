@@ -27,29 +27,34 @@ const ENCRYPTION_KEY = process.env.REDIS_EXPLORER_KEY || 'default-key-change-in-
 // Simple encryption for passwords (better than localStorage)
 const encrypt = (text: string): string => {
   try {
-    const cipher = crypto.createCipher('aes192', ENCRYPTION_KEY);
+    const algorithm = 'aes-256-cbc';
+    const key = crypto.scryptSync(ENCRYPTION_KEY, 'salt', 32);
+    const iv = crypto.randomBytes(16);
+    const cipher = crypto.createCipheriv(algorithm, key, iv);
     let encrypted = cipher.update(text, 'utf8', 'hex');
     encrypted += cipher.final('hex');
-    return encrypted;
-  } catch {
-    // Fallback to base64 if crypto fails
-    return Buffer.from(text).toString('base64');
+    return iv.toString('hex') + ':' + encrypted;
+  } catch (error) {
+    console.error('Encryption error:', error);
+    return text; // Return original text if encryption fails
   }
 };
 
-const decrypt = (encryptedText: string): string => {
+const decrypt = (text: string): string => {
   try {
-    const decipher = crypto.createDecipher('aes192', ENCRYPTION_KEY);
-    let decrypted = decipher.update(encryptedText, 'hex', 'utf8');
+    const algorithm = 'aes-256-cbc';
+    const key = crypto.scryptSync(ENCRYPTION_KEY, 'salt', 32);
+    const parts = text.split(':');
+    if (parts.length !== 2) return text; // Return original if not encrypted format
+    const iv = Buffer.from(parts[0], 'hex');
+    const encrypted = parts[1];
+    const decipher = crypto.createDecipheriv(algorithm, key, iv);
+    let decrypted = decipher.update(encrypted, 'hex', 'utf8');
     decrypted += decipher.final('utf8');
     return decrypted;
-  } catch {
-    // Fallback to base64 if crypto fails
-    try {
-      return Buffer.from(encryptedText, 'base64').toString('utf8');
-    } catch {
-      return encryptedText; // Return as-is if all fails
-    }
+  } catch (error) {
+    console.error('Decryption error:', error);
+    return text; // Return original text if decryption fails
   }
 };
 

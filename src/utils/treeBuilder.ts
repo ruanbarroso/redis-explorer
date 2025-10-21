@@ -33,7 +33,7 @@ export class TreeBuilder {
           name: part,
           fullPath: currentPath,
           type: isLast ? 'key' : 'folder',
-          children: isLast ? undefined : {},
+          children: isLast ? undefined : [],
           keyData: isLast ? key : undefined,
           expanded: false,
           level: index,
@@ -44,7 +44,7 @@ export class TreeBuilder {
         // Ensure it's a folder if we're not at the last part
         if (currentLevel[part].type === 'key') {
           currentLevel[part].type = 'folder';
-          currentLevel[part].children = currentLevel[part].children || {};
+          currentLevel[part].children = currentLevel[part].children || [];
           currentLevel[part].keyData = undefined;
         }
         currentLevel = currentLevel[part].children as { [key: string]: TreeNode };

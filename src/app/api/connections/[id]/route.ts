@@ -4,10 +4,10 @@ import { serverConnectionStorage } from '@/services/connection-storage';
 // DELETE /api/connections/[id] - Remove a specific connection
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const connectionId = params.id;
+    const { id: connectionId } = await params;
     
     if (!connectionId) {
       return NextResponse.json(

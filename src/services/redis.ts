@@ -25,7 +25,6 @@ class RedisService {
         port: connection.port,
         password: connection.password,
         db: connection.database || 0,
-        retryDelayOnFailover: 100,
         enableReadyCheck: false,
         maxRetriesPerRequest: null,
         lazyConnect: true,
@@ -301,7 +300,7 @@ class RedisService {
     if (!redis) return [];
 
     try {
-      const slowLog = await redis.slowlog('get', count);
+      const slowLog = await redis.call('SLOWLOG', 'GET', count) as any[];
       return slowLog.map((entry: any) => ({
         id: entry[0],
         timestamp: entry[1],

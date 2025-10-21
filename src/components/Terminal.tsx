@@ -114,7 +114,7 @@ const Terminal = () => {
     setHistoryIndex(-1);
   };
 
-  const formatResult = (result: any) => {
+  const formatResult = (result: any): string => {
     if (result === null) return '(nil)';
     if (typeof result === 'string') return `"${result}"`;
     if (typeof result === 'number') return result.toString();
@@ -197,7 +197,7 @@ const Terminal = () => {
                   Enter Redis commands below. Use ↑/↓ arrows to navigate history.
                 </Typography>
                 <Typography variant="body2" color="text.secondary" mt={1}>
-                  Examples: GET mykey, SET mykey "value", KEYS *, INFO
+                  Examples: GET mykey, SET mykey &quot;value&quot;, KEYS *, INFO
                 </Typography>
               </Box>
             ) : (
