@@ -80,7 +80,7 @@ export const removeConnectionFromServer = createAsyncThunk(
 
 export const connectToRedis = createAsyncThunk(
   'connection/connect',
-  async (connection: RedisConnection, { getState }) => {
+  async (connection: RedisConnection, { getState, dispatch }) => {
     const state = getState() as { connection: ConnectionState };
     
     // Disconnect from previous connection if exists
@@ -92,14 +92,22 @@ export const connectToRedis = createAsyncThunk(
     if (!success) {
       throw new Error('Failed to connect to Redis');
     }
+    
+    // Clear keys state when connecting to a new Redis instance
+    dispatch({ type: 'keys/clearKeys' });
+    
     return { ...connection, connected: true };
   }
 );
 
 export const disconnectFromRedis = createAsyncThunk(
   'connection/disconnect',
-  async (connectionId: string) => {
+  async (connectionId: string, { dispatch }) => {
     await redisClientService.disconnect();
+    
+    // Clear keys state when disconnecting
+    dispatch({ type: 'keys/clearKeys' });
+    
     return connectionId;
   }
 );
