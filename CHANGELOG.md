@@ -1,3 +1,9 @@
+## [1.5.0](https://github.com/ruanbarroso/redis-explorer/compare/v1.4.0...v1.5.0) (2025-10-22)
+
+### 🚀 Features
+
+* Enhance Redis Dashboard with comprehensive metrics and improved error handling ([146a322](https://github.com/ruanbarroso/redis-explorer/commit/146a3229b938ff574edd40a61dbf74baa4fb8c3e))
+
 ## [1.4.0](https://github.com/ruanbarroso/redis-explorer/compare/v1.3.0...v1.4.0) (2025-10-22)
 
 ### 🚀 Features
