@@ -1,3 +1,9 @@
+## [1.4.0](https://github.com/ruanbarroso/redis-explorer/compare/v1.3.0...v1.4.0) (2025-10-22)
+
+### 🚀 Features
+
+* componentização inteligente de modais e funcionalidades de auth ([868c112](https://github.com/ruanbarroso/redis-explorer/commit/868c1129d1dc210a98829d41697cabceadffe605))
+
 ## [1.3.0](https://github.com/ruanbarroso/redis-explorer/compare/v1.2.5...v1.3.0) (2025-10-22)
 
 ### 🚀 Features
