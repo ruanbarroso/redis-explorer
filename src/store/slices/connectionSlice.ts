@@ -118,7 +118,7 @@ export const connectToRedis = createAsyncThunk(
     
     const success = await redisClientService.connect(connection);
     if (!success) {
-      throw new Error('Failed to connect to Redis');
+      throw new Error(`Não foi possível conectar ao Redis em ${connection.host}:${connection.port}. Verifique se o servidor está rodando e as credenciais estão corretas.`);
     }
     
     // Clear keys state when connecting to a new Redis instance

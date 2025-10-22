@@ -14,10 +14,10 @@ import {
   TableContainer,
   TableHead,
   TableRow,
-  Paper,
   Chip,
   IconButton,
   Alert,
+  Paper,
 } from '@mui/material';
 import {
   Refresh as RefreshIcon,
@@ -26,12 +26,16 @@ import {
   Storage as StorageIcon,
   Timeline as TimelineIcon,
   AccessTime as UptimeIcon,
-  NetworkCheck as NetworkIcon,
-  Security as SecurityIcon,
   DataUsage as DataIcon,
-  Sync as SyncIcon,
+  Wifi as NetworkIcon,
   Block as BlockIcon,
-  Notifications as PubSubIcon,
+  Computer as ServerIcon,
+  Code as CommandIcon,
+  Save as PersistenceIcon,
+  Psychology as CpuIcon,
+  AccountTree as ReplicationIcon,
+  Folder as DatabaseIcon,
+  TrendingUp as TrendingUpIcon,
 } from '@mui/icons-material';
 import { useDispatch, useSelector } from 'react-redux';
 import { RootState, AppDispatch } from '@/store';
@@ -631,6 +635,288 @@ const Dashboard = () => {
                   {formatNumber(stats?.evictedKeys || 0)}
                 </Typography>
               </Box>
+            </CardContent>
+          </Card>
+        </Grid>
+
+        {/* Server Information */}
+        <Grid item xs={12} md={6}>
+          <Card sx={{ height: '100%', minHeight: 280 }}>
+            <CardContent sx={{ height: '100%', display: 'flex', flexDirection: 'column', p: 2 }}>
+              <Typography variant="h6" gutterBottom>
+                <Box display="flex" alignItems="center" gap={1}>
+                  <ServerIcon color="primary" />
+                  Server Information
+                </Box>
+              </Typography>
+              <Box display="flex" justifyContent="space-between" mb={1}>
+                <Typography variant="body2">Redis Version</Typography>
+                <Typography variant="body2" fontWeight="medium">
+                  {stats?.redisVersion || info?.server?.redis_version || 'N/A'}
+                </Typography>
+              </Box>
+              <Box display="flex" justifyContent="space-between" mb={1}>
+                <Typography variant="body2">Mode</Typography>
+                <Typography variant="body2">
+                  {stats?.redisMode || info?.server?.redis_mode || 'standalone'}
+                </Typography>
+              </Box>
+              <Box display="flex" justifyContent="space-between" mb={1}>
+                <Typography variant="body2">Operating System</Typography>
+                <Typography variant="body2">
+                  {stats?.os || info?.server?.os || 'N/A'}
+                </Typography>
+              </Box>
+              <Box display="flex" justifyContent="space-between" mb={1}>
+                <Typography variant="body2">Architecture</Typography>
+                <Typography variant="body2">
+                  {stats?.archBits ? `${stats.archBits} bits` : 
+                   info?.server?.arch_bits ? `${info.server.arch_bits} bits` : 'N/A'}
+                </Typography>
+              </Box>
+              <Box display="flex" justifyContent="space-between" mb={1}>
+                <Typography variant="body2">Process ID</Typography>
+                <Typography variant="body2" fontFamily="monospace">
+                  {stats?.processId || info?.server?.process_id || 'N/A'}
+                </Typography>
+              </Box>
+              <Box display="flex" justifyContent="space-between" mb={1}>
+                <Typography variant="body2">TCP Port</Typography>
+                <Typography variant="body2" fontFamily="monospace">
+                  {stats?.tcpPort || info?.server?.tcp_port || 'N/A'}
+                </Typography>
+              </Box>
+            </CardContent>
+          </Card>
+        </Grid>
+
+        {/* CPU Usage */}
+        <Grid item xs={12} md={6}>
+          <Card sx={{ height: '100%', minHeight: 280 }}>
+            <CardContent sx={{ height: '100%', display: 'flex', flexDirection: 'column', p: 2 }}>
+              <Typography variant="h6" gutterBottom>
+                <Box display="flex" alignItems="center" gap={1}>
+                  <CpuIcon color="secondary" />
+                  CPU Usage
+                </Box>
+              </Typography>
+              <Box display="flex" justifyContent="space-between" mb={1}>
+                <Typography variant="body2">System CPU Time</Typography>
+                <Typography variant="body2" color="secondary">
+                  {info?.cpu?.used_cpu_sys ? `${parseFloat(info.cpu.used_cpu_sys).toFixed(2)}s` : 
+                   stats?.usedCpuSys ? `${stats.usedCpuSys.toFixed(2)}s` : '0s'}
+                </Typography>
+              </Box>
+              <Box display="flex" justifyContent="space-between" mb={1}>
+                <Typography variant="body2">User CPU Time</Typography>
+                <Typography variant="body2" color="primary">
+                  {info?.cpu?.used_cpu_user ? `${parseFloat(info.cpu.used_cpu_user).toFixed(2)}s` : 
+                   stats?.usedCpuUser ? `${stats.usedCpuUser.toFixed(2)}s` : '0s'}
+                </Typography>
+              </Box>
+              <Box display="flex" justifyContent="space-between" mb={1}>
+                <Typography variant="body2">CPU Percentage</Typography>
+                <Typography variant="body2" color="warning.main" fontWeight="medium">
+                  {info?.cpu?.used_cpu_sys && info?.server?.uptime_in_seconds ? 
+                    `${Math.min((parseFloat(info.cpu.used_cpu_sys) / parseInt(info.server.uptime_in_seconds)) * 100, 100).toFixed(2)}%` :
+                    'N/A (uptime required)'}
+                </Typography>
+              </Box>
+              <Box display="flex" justifyContent="space-between" mb={1}>
+                <Typography variant="body2">Server Uptime</Typography>
+                <Typography variant="body2" color="text.secondary">
+                  {info?.server?.uptime_in_seconds ? 
+                    `${parseInt(info.server.uptime_in_seconds).toLocaleString()}s (${Math.floor(parseInt(info.server.uptime_in_seconds) / 86400)}d)` :
+                    'N/A'}
+                </Typography>
+              </Box>
+              <Box display="flex" justifyContent="space-between" mb={1}>
+                <Typography variant="body2">System CPU (Children)</Typography>
+                <Typography variant="body2">
+                  {stats?.usedCpuSysChildren ? `${stats.usedCpuSysChildren.toFixed(2)}s` : '0s'}
+                </Typography>
+              </Box>
+              <Box display="flex" justifyContent="space-between" mb={1}>
+                <Typography variant="body2">User CPU (Children)</Typography>
+                <Typography variant="body2">
+                  {stats?.usedCpuUserChildren ? `${stats.usedCpuUserChildren.toFixed(2)}s` : '0s'}
+                </Typography>
+              </Box>
+              <Box display="flex" justifyContent="space-between" mb={1}>
+                <Typography variant="body2">Total CPU Time</Typography>
+                <Typography variant="body2" fontWeight="medium" color="info.main">
+                  {info?.cpu?.used_cpu_sys && info?.cpu?.used_cpu_user 
+                    ? `${(parseFloat(info.cpu.used_cpu_sys) + parseFloat(info.cpu.used_cpu_user)).toFixed(2)}s` 
+                    : 'N/A'}
+                </Typography>
+              </Box>
+            </CardContent>
+          </Card>
+        </Grid>
+
+        {/* Command Statistics */}
+        <Grid item xs={12}>
+          <Card sx={{ height: '100%' }}>
+            <CardContent sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+              <Typography variant="h6" gutterBottom>
+                <Box display="flex" alignItems="center" gap={1}>
+                  <CommandIcon color="secondary" />
+                  Top Commands
+                </Box>
+              </Typography>
+              <TableContainer sx={{ flex: 1 }}>
+                <Table size="small">
+                  <TableHead>
+                    <TableRow>
+                      <TableCell>Command</TableCell>
+                      <TableCell align="right">Calls</TableCell>
+                      <TableCell align="right">% Total</TableCell>
+                      <TableCell align="right">Avg Time (μs)</TableCell>
+                      <TableCell align="right">Total Time</TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {stats?.commandStats?.length ? (
+                      stats.commandStats.map((cmd) => (
+                        <TableRow key={cmd.command}>
+                          <TableCell sx={{ fontFamily: 'monospace', fontWeight: 'medium' }}>
+                            {cmd.command}
+                          </TableCell>
+                          <TableCell align="right">{formatNumber(cmd.calls)}</TableCell>
+                          <TableCell align="right">
+                            <Chip 
+                              label={`${cmd.percentage.toFixed(1)}%`}
+                              color={cmd.percentage > 20 ? 'primary' : cmd.percentage > 5 ? 'secondary' : 'default'}
+                              size="small"
+                            />
+                          </TableCell>
+                          <TableCell align="right">{cmd.usecPerCall.toFixed(1)}</TableCell>
+                          <TableCell align="right">{formatNumber(cmd.usec)}</TableCell>
+                        </TableRow>
+                      ))
+                    ) : (
+                      <TableRow>
+                        <TableCell colSpan={5} align="center">
+                          <Typography color="text.secondary">
+                            No command statistics available
+                          </Typography>
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+            </CardContent>
+          </Card>
+        </Grid>
+
+        {/* Persistence Status */}
+        <Grid item xs={12} md={6}>
+          <Card sx={{ height: '100%', minHeight: 280 }}>
+            <CardContent sx={{ height: '100%', display: 'flex', flexDirection: 'column', p: 2 }}>
+              <Typography variant="h6" gutterBottom>
+                <Box display="flex" alignItems="center" gap={1}>
+                  <PersistenceIcon color="success" />
+                  Persistence Status
+                </Box>
+              </Typography>
+              <Box display="flex" justifyContent="space-between" mb={1}>
+                <Typography variant="body2">RDB Last Save</Typography>
+                <Typography variant="body2">
+                  {stats?.rdbLastSaveTime 
+                    ? format(new Date(stats.rdbLastSaveTime * 1000), 'HH:mm:ss')
+                    : 'Never'}
+                </Typography>
+              </Box>
+              <Box display="flex" justifyContent="space-between" mb={1}>
+                <Typography variant="body2">Changes Since Save</Typography>
+                <Typography variant="body2" color={stats?.rdbChangesSinceLastSave ? 'warning' : 'inherit'}>
+                  {formatNumber(stats?.rdbChangesSinceLastSave || 0)}
+                </Typography>
+              </Box>
+              <Box display="flex" justifyContent="space-between" mb={1}>
+                <Typography variant="body2">Last Bgsave Status</Typography>
+                <Chip 
+                  label={stats?.rdbLastBgsaveStatus || 'Unknown'}
+                  color={stats?.rdbLastBgsaveStatus === 'ok' ? 'success' : 'error'}
+                  size="small"
+                />
+              </Box>
+              <Box display="flex" justifyContent="space-between" mb={1}>
+                <Typography variant="body2">AOF Enabled</Typography>
+                <Chip 
+                  label={stats?.aofEnabled ? 'Yes' : 'No'}
+                  color={stats?.aofEnabled ? 'success' : 'default'}
+                  size="small"
+                />
+              </Box>
+              {stats?.aofEnabled && (
+                <>
+                  <Box display="flex" justifyContent="space-between" mb={1}>
+                    <Typography variant="body2">AOF Current Size</Typography>
+                    <Typography variant="body2">{formatBytes(stats?.aofCurrentSize || 0)}</Typography>
+                  </Box>
+                  <Box display="flex" justifyContent="space-between" mb={1}>
+                    <Typography variant="body2">AOF Rewrite</Typography>
+                    <Chip 
+                      label={stats?.aofRewriteInProgress ? 'In Progress' : 'Idle'}
+                      color={stats?.aofRewriteInProgress ? 'warning' : 'success'}
+                      size="small"
+                    />
+                  </Box>
+                </>
+              )}
+            </CardContent>
+          </Card>
+        </Grid>
+
+        {/* Database Breakdown */}
+        <Grid item xs={12} md={6}>
+          <Card sx={{ height: '100%' }}>
+            <CardContent sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+              <Typography variant="h6" gutterBottom>
+                <Box display="flex" alignItems="center" gap={1}>
+                  <DatabaseIcon color="primary" />
+                  Database Breakdown
+                </Box>
+              </Typography>
+              {stats?.databases?.length ? (
+                <Box sx={{ flex: 1, overflow: 'auto' }}>
+                  {stats.databases.map((db) => (
+                    <Box key={db.db} sx={{ mb: 2, p: 1, border: 1, borderColor: 'divider', borderRadius: 1 }}>
+                      <Typography variant="subtitle2" fontWeight="medium" mb={1}>
+                        Database {db.db}
+                      </Typography>
+                      <Box display="flex" justifyContent="space-between" mb={0.5}>
+                        <Typography variant="body2">Keys</Typography>
+                        <Typography variant="body2" fontWeight="medium">
+                          {formatNumber(db.keys)}
+                        </Typography>
+                      </Box>
+                      <Box display="flex" justifyContent="space-between" mb={0.5}>
+                        <Typography variant="body2">With TTL</Typography>
+                        <Typography variant="body2">
+                          {formatNumber(db.expires)} ({db.keys > 0 ? ((db.expires / db.keys) * 100).toFixed(1) : '0'}%)
+                        </Typography>
+                      </Box>
+                      {db.avgTtl > 0 && (
+                        <Box display="flex" justifyContent="space-between">
+                          <Typography variant="body2">Avg TTL</Typography>
+                          <Typography variant="body2">
+                            {Math.round(db.avgTtl / 1000)}s
+                          </Typography>
+                        </Box>
+                      )}
+                    </Box>
+                  ))}
+                </Box>
+              ) : (
+                <Box sx={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <Typography color="text.secondary" textAlign="center">
+                    No database information available
+                  </Typography>
+                </Box>
+              )}
             </CardContent>
           </Card>
         </Grid>

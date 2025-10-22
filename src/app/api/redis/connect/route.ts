@@ -12,7 +12,10 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: true });
     } else {
       return NextResponse.json(
-        { success: false, error: 'Failed to connect to Redis' },
+        { 
+          success: false, 
+          error: `Não foi possível conectar ao Redis em ${connection.host}:${connection.port}. Verifique se o servidor está rodando e acessível.` 
+        },
         { status: 400 }
       );
     }

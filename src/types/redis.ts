@@ -40,6 +40,21 @@ export interface RedisInfo {
   keyspace: Record<string, string>;
 }
 
+export interface RedisCommandStat {
+  command: string;
+  calls: number;
+  usec: number;
+  usecPerCall: number;
+  percentage: number;
+}
+
+export interface RedisDatabaseInfo {
+  db: number;
+  keys: number;
+  expires: number;
+  avgTtl: number;
+}
+
 export interface RedisStats {
   connectedClients: number;
   usedMemory: number;
@@ -71,6 +86,63 @@ export interface RedisStats {
   totalKeys: number;
   totalExpires: number;
   avgTtl: number;
+  
+  // Server Information
+  redisVersion?: string;
+  redisMode?: string;
+  os?: string;
+  archBits?: string;
+  processId?: string;
+  tcpPort?: string;
+  configFile?: string;
+  
+  // Memory Advanced
+  usedMemoryRss?: number;
+  usedMemoryRssHuman?: string;
+  usedMemoryPeak?: number;
+  usedMemoryPeakHuman?: string;
+  usedMemoryLua?: number;
+  usedMemoryLuaHuman?: string;
+  memAllocator?: string;
+  memFragmentationBytes?: number;
+  
+  // Persistence
+  rdbLastSaveTime?: number;
+  rdbChangesSinceLastSave?: number;
+  rdbLastBgsaveStatus?: string;
+  aofEnabled?: boolean;
+  aofCurrentSize?: number;
+  aofBaseSize?: number;
+  aofPendingRewrite?: number;
+  aofRewriteInProgress?: boolean;
+  
+  // CPU Usage
+  usedCpuSys?: number;
+  usedCpuUser?: number;
+  usedCpuSysChildren?: number;
+  usedCpuUserChildren?: number;
+  
+  // CPU Percentage (calculated)
+  usedCpuSysPercent?: number;
+  usedCpuUserPercent?: number;
+  
+  // Replication Advanced
+  role?: string;
+  connectedSlaves?: number;
+  masterReplOffset?: number;
+  replBacklogActive?: boolean;
+  replBacklogSize?: number;
+  
+  // Connection Stats
+  totalConnectionsReceived?: number;
+  keyspaceHitRate?: number;
+  keyspaceMissRate?: number;
+  
+  // Command Statistics
+  commandStats?: RedisCommandStat[];
+  
+  // Database Breakdown
+  databases?: RedisDatabaseInfo[];
 }
 
 export interface RedisCommand {
