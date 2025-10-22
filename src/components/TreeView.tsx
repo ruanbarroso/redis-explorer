@@ -13,6 +13,13 @@ import {
   Collapse,
   Chip,
   Tooltip,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogContentText,
+  DialogActions,
+  Button,
+  Alert,
 } from '@mui/material';
 import {
   ExpandMore as ExpandMoreIcon,
@@ -46,27 +53,47 @@ const TreeView = ({
   expandedNodes,
   onToggleExpand,
 }: TreeViewProps) => {
+  const [deleteDialog, setDeleteDialog] = useState<{
+    open: boolean;
+    folderName?: string;
+    keyCount?: number;
+    keysToDelete?: string[];
+  }>({ open: false });
   
   const handleFolderDelete = (folderNode: TreeNode) => {
     const keysToDelete = collectAllKeys(folderNode);
     const keyCount = keysToDelete.length;
     
     if (keyCount === 0) {
-      alert('No keys found in this folder.');
+      setDeleteDialog({
+        open: true,
+        folderName: folderNode.name,
+        keyCount: 0,
+      });
       return;
     }
     
-    if (confirm(`Are you sure you want to delete ${keyCount} key${keyCount > 1 ? 's' : ''} in folder "${folderNode.name}"?\n\nThis action cannot be undone.`)) {
-      if (onBulkKeyDelete && keyCount > 1) {
+    setDeleteDialog({
+      open: true,
+      folderName: folderNode.name,
+      keyCount,
+      keysToDelete,
+    });
+  };
+
+  const handleConfirmDelete = () => {
+    if (deleteDialog.keysToDelete && deleteDialog.keyCount && deleteDialog.keyCount > 0) {
+      if (onBulkKeyDelete && deleteDialog.keyCount > 1) {
         // Use bulk delete for better performance
-        onBulkKeyDelete(keysToDelete);
+        onBulkKeyDelete(deleteDialog.keysToDelete);
       } else {
         // Fallback to individual deletes
-        keysToDelete.forEach(keyPath => {
+        deleteDialog.keysToDelete.forEach(keyPath => {
           onKeyDelete(keyPath);
         });
       }
     }
+    setDeleteDialog({ open: false });
   };
   
   const collectAllKeys = (node: TreeNode): string[] => {
@@ -241,9 +268,72 @@ const TreeView = ({
   };
 
   return (
-    <List sx={{ width: '100%', height: '100%', overflow: 'auto' }}>
-      {nodes.map((node) => renderNode(node))}
-    </List>
+    <>
+      <List sx={{ width: '100%', height: '100%', overflow: 'auto' }}>
+        {nodes.map((node) => renderNode(node))}
+      </List>
+
+      {/* Modal de Confirmação de Delete de Pasta */}
+      <Dialog
+        open={deleteDialog.open}
+        onClose={() => setDeleteDialog({ open: false })}
+        aria-labelledby="delete-folder-dialog-title"
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle 
+          id="delete-folder-dialog-title" 
+          sx={{ 
+            color: 'error.main',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 1
+          }}
+        >
+          <DeleteIcon />
+          Confirmar Exclusão de Pasta
+        </DialogTitle>
+        <DialogContent>
+          {deleteDialog.keyCount === 0 ? (
+            <Alert severity="info" sx={{ mb: 2 }}>
+              Nenhuma chave encontrada na pasta "{deleteDialog.folderName}".
+            </Alert>
+          ) : (
+            <>
+              <DialogContentText sx={{ mb: 2 }}>
+                Tem certeza que deseja excluir <strong>{deleteDialog.keyCount} chave{deleteDialog.keyCount && deleteDialog.keyCount > 1 ? 's' : ''}</strong> na pasta <strong>"{deleteDialog.folderName}"</strong>?
+              </DialogContentText>
+              <Alert severity="warning" sx={{ mb: 2 }}>
+                ⚠️ Esta ação não pode ser desfeita!
+              </Alert>
+              <Typography variant="body2" color="text.secondary">
+                Todas as chaves dentro desta pasta serão permanentemente removidas do Redis.
+              </Typography>
+            </>
+          )}
+        </DialogContent>
+        <DialogActions sx={{ p: 2, gap: 1 }}>
+          <Button 
+            onClick={() => setDeleteDialog({ open: false })}
+            variant="outlined"
+            color="inherit"
+          >
+            Cancelar
+          </Button>
+          {deleteDialog.keyCount && deleteDialog.keyCount > 0 && (
+            <Button 
+              onClick={handleConfirmDelete}
+              variant="contained"
+              color="error"
+              startIcon={<DeleteIcon />}
+              autoFocus
+            >
+              Excluir {deleteDialog.keyCount} Chave{deleteDialog.keyCount > 1 ? 's' : ''}
+            </Button>
+          )}
+        </DialogActions>
+      </Dialog>
+    </>
   );
 };
 

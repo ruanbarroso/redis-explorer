@@ -14,6 +14,20 @@ import {
   Container,
   Paper,
   Avatar,
+  Drawer,
+  List,
+  ListItem,
+  ListItemButton,
+  ListItemIcon,
+  ListItemText,
+  Divider,
+  AppBar,
+  Toolbar,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogContentText,
+  DialogActions,
 } from '@mui/material';
 import {
   Add as AddIcon,
@@ -26,6 +40,9 @@ import {
   FileDownload as ExportIcon,
   FileUpload as ImportIcon,
   DeleteSweep as ClearAllIcon,
+  Menu as MenuIcon,
+  VpnKey as PasswordIcon,
+  Logout as LogoutIcon,
 } from '@mui/icons-material';
 import { useDispatch, useSelector } from 'react-redux';
 import { RootState, AppDispatch, store } from '@/store';
@@ -37,10 +54,12 @@ import {
   clearError,
 } from '@/store/slices/connectionSlice';
 import { RedisConnection } from '@/types/redis';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuthWithModals } from '@/hooks/useAuthWithModals';
 import { serverConnectionClient } from '@/services/server-connection-client';
 import ConnectionDialog from './ConnectionDialog';
 import ErrorDialog from './ErrorDialog';
+import ConfirmationDialog from './ConfirmationDialog';
+import AuthModals from './AuthModals';
 
 interface ConnectionSelectorProps {
   onConnectionSuccess: (connection: RedisConnection) => void;
@@ -48,21 +67,40 @@ interface ConnectionSelectorProps {
 
 const ConnectionSelector = ({ onConnectionSuccess }: ConnectionSelectorProps) => {
   const dispatch = useDispatch<AppDispatch>();
-  const { connections, activeConnection, isConnecting, error } = useSelector(
-    (state: RootState) => state.connection
-  );
-  const { isAuthenticated, isHydrated } = useAuth();
-
+  const { 
+    isAuthenticated, 
+    isHydrated,
+    logoutDialogOpen,
+    changePasswordDialogOpen,
+    showLogoutConfirmation,
+    handleConfirmLogout,
+    showChangePassword,
+    closeLogoutDialog,
+    closeChangePasswordDialog
+  } = useAuthWithModals();
+  const { connections, error, activeConnection } = useSelector((state: RootState) => state.connection);
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [editingConnection, setEditingConnection] = useState<RedisConnection | null>(null);
-  const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
   const [connectingId, setConnectingId] = useState<string | null>(null);
+  const [editingConnection, setEditingConnection] = useState<RedisConnection | null>(null);
   const [errorDialog, setErrorDialog] = useState<{ open: boolean; message: string }>({
     open: false,
     message: ''
   });
+  const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
+  const [deleteDialog, setDeleteDialog] = useState<{
+    open: boolean;
+    connectionId?: string;
+    connectionName?: string;
+  }>({ open: false });
+  const [clearAllDialog, setClearAllDialog] = useState(false);
 
-  // Load connections from server only when authenticated
+  // Garantir que o componente só renderiza no cliente
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   useEffect(() => {
     if (isHydrated && isAuthenticated && !hasLoadedOnce) {
       const timeoutId = setTimeout(() => {
@@ -73,6 +111,7 @@ const ConnectionSelector = ({ onConnectionSuccess }: ConnectionSelectorProps) =>
           setHasLoadedOnce(true);
         }).catch(error => {
           console.error('Failed to load connections:', error);
+          setHasLoadedOnce(true);
         });
       }, 100);
 
@@ -86,6 +125,37 @@ const ConnectionSelector = ({ onConnectionSuccess }: ConnectionSelectorProps) =>
       onConnectionSuccess(activeConnection);
     }
   }, [hasLoadedOnce, activeConnection, onConnectionSuccess]);
+
+  // Evita problemas de hidratação - APÓS todos os hooks
+  if (!mounted || !isHydrated) {
+    return (
+      <Box
+        sx={{
+          height: '100vh',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          bgcolor: 'background.default',
+        }}
+      >
+        <Box
+          sx={{
+            width: 40,
+            height: 40,
+            border: '4px solid',
+            borderColor: 'primary.main',
+            borderTopColor: 'transparent',
+            borderRadius: '50%',
+            animation: 'spin 1s linear infinite',
+            '@keyframes spin': {
+              '0%': { transform: 'rotate(0deg)' },
+              '100%': { transform: 'rotate(360deg)' },
+            },
+          }}
+        />
+      </Box>
+    );
+  }
 
   const handleConnect = async (connection: RedisConnection) => {
     setConnectingId(connection.id);
@@ -115,14 +185,24 @@ const ConnectionSelector = ({ onConnectionSuccess }: ConnectionSelectorProps) =>
     setDialogOpen(true);
   };
 
-  const handleDelete = async (connectionId: string) => {
-    if (confirm('Tem certeza que deseja excluir esta conexão?')) {
+  const handleDelete = (connectionId: string) => {
+    const connection = connections.find(c => c.id === connectionId);
+    setDeleteDialog({
+      open: true,
+      connectionId,
+      connectionName: connection?.name || 'Conexão'
+    });
+  };
+
+  const handleConfirmDelete = async () => {
+    if (deleteDialog.connectionId) {
       try {
-        await dispatch(removeConnectionFromServer(connectionId)).unwrap();
+        await dispatch(removeConnectionFromServer(deleteDialog.connectionId)).unwrap();
       } catch (error) {
         console.error('Failed to delete connection:', error);
       }
     }
+    setDeleteDialog({ open: false });
   };
 
   const handleDialogClose = () => {
@@ -134,7 +214,10 @@ const ConnectionSelector = ({ onConnectionSuccess }: ConnectionSelectorProps) =>
     try {
       await serverConnectionClient.exportConnections();
     } catch (error) {
-      alert('Falha ao exportar conexões');
+      setErrorDialog({
+        open: true,
+        message: 'Falha ao exportar conexões'
+      });
     }
   };
 
@@ -151,67 +234,161 @@ const ConnectionSelector = ({ onConnectionSuccess }: ConnectionSelectorProps) =>
       if (result.success) {
         // Reload connections from server
         dispatch(loadConnections());
-        alert(`Importadas ${result.importedCount} conexão(ões) com sucesso`);
+        setErrorDialog({
+          open: true,
+          message: `✅ Importadas ${result.importedCount} conexão(ões) com sucesso!`
+        });
       } else {
-        alert(`Falha ao importar conexões: ${result.error}`);
+        setErrorDialog({
+          open: true,
+          message: `Falha ao importar conexões: ${result.error}`
+        });
       }
     } catch (error) {
-      alert(`Falha ao importar conexões: ${error instanceof Error ? error.message : 'Erro desconhecido'}`);
+      setErrorDialog({
+        open: true,
+        message: `Falha ao importar conexões: ${error instanceof Error ? error.message : 'Erro desconhecido'}`
+      });
     }
   };
 
-  const handleClearAll = async () => {
-    if (confirm('Tem certeza que deseja excluir todas as conexões salvas? Esta ação não pode ser desfeita.')) {
-      try {
-        await serverConnectionClient.clearAllConnections();
-        dispatch(loadConnections()); // Reload to reflect changes
-      } catch (error) {
-        alert('Falha ao limpar conexões');
-      }
-    }
+  const handleClearAll = () => {
+    setClearAllDialog(true);
   };
+
+  const handleConfirmClearAll = async () => {
+    try {
+      await serverConnectionClient.clearAllConnections();
+      dispatch(loadConnections()); // Reload to reflect changes
+    } catch (error) {
+      setErrorDialog({
+        open: true,
+        message: 'Falha ao limpar conexões'
+      });
+    }
+    setClearAllDialog(false);
+  };
+
+  // As funções de logout e changePassword agora vêm do hook useAuthWithModals
+
+  // Componente do conteúdo do drawer
+  const DrawerContent = ({ onChangePassword, onLogout }: { onChangePassword: () => void; onLogout: () => void }) => (
+    <Box sx={{ height: '100%', position: 'relative' }}>
+      <Toolbar>
+        <Box display="flex" alignItems="center" gap={1}>
+          <StorageIcon sx={{ color: 'primary.main' }} />
+          <Typography variant="h6" noWrap component="div">
+            Redis Explorer
+          </Typography>
+        </Box>
+      </Toolbar>
+      <Divider />
+      
+      {/* Menu inferior - posicionamento absoluto igual às outras telas */}
+      <Box sx={{ position: 'absolute', bottom: 16, left: 16, right: 16 }}>
+        <Box display="flex" flexDirection="column" gap={1}>
+          <Button
+            fullWidth
+            variant="outlined"
+            size="small"
+            startIcon={<PasswordIcon />}
+            onClick={onChangePassword}
+          >
+            Trocar Senha
+          </Button>
+          <Button
+            fullWidth
+            variant="outlined"
+            size="small"
+            color="error"
+            startIcon={<LogoutIcon />}
+            onClick={onLogout}
+          >
+            Sair
+          </Button>
+        </Box>
+      </Box>
+    </Box>
+  );
+
+  const drawerWidth = 240;
 
   return (
-    <Box
-      sx={{
-        minHeight: '100vh',
-        bgcolor: 'background.default',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        p: 3,
-      }}
-    >
-      <Container maxWidth="lg">
-        <Paper
-          elevation={8}
+    <Box sx={{ display: 'flex', height: '100vh' }}>
+      {/* AppBar com botão de menu */}
+      <AppBar
+        position="fixed"
+        sx={{
+          width: { sm: `calc(100% - ${drawerWidth}px)` },
+          ml: { sm: `${drawerWidth}px` },
+        }}
+      >
+        <Toolbar>
+          <IconButton
+            color="inherit"
+            aria-label="open drawer"
+            edge="start"
+            onClick={() => setDrawerOpen(!drawerOpen)}
+            sx={{ mr: 2, display: { sm: 'none' } }}
+          >
+            <MenuIcon />
+          </IconButton>
+          <Typography variant="h6" noWrap component="div">
+            Conexões
+          </Typography>
+        </Toolbar>
+      </AppBar>
+
+      {/* Drawer lateral */}
+      <Box
+        component="nav"
+        sx={{ width: { sm: drawerWidth }, flexShrink: { sm: 0 } }}
+      >
+        <Drawer
+          variant="temporary"
+          open={drawerOpen}
+          onClose={() => setDrawerOpen(false)}
+          ModalProps={{
+            keepMounted: true,
+          }}
           sx={{
-            p: 4,
-            borderRadius: 2,
-            bgcolor: 'background.paper',
+            display: { xs: 'block', sm: 'none' },
+            '& .MuiDrawer-paper': { boxSizing: 'border-box', width: drawerWidth },
           }}
         >
-          {/* Header */}
-          <Box textAlign="center" mb={4}>
-            <Avatar
-              sx={{
-                width: 80,
-                height: 80,
-                mx: 'auto',
-                mb: 2,
-                bgcolor: 'primary.main',
-              }}
-            >
-              <StorageIcon sx={{ fontSize: 40 }} />
-            </Avatar>
-            <Typography variant="h3" component="h1" gutterBottom fontWeight="bold" color="text.primary">
-              Redis Explorer
-            </Typography>
-            <Typography variant="h6" color="text.secondary" mb={3}>
+          <DrawerContent onChangePassword={showChangePassword} onLogout={showLogoutConfirmation} />
+        </Drawer>
+        <Drawer
+          variant="permanent"
+          sx={{
+            display: { xs: 'none', sm: 'block' },
+            '& .MuiDrawer-paper': { boxSizing: 'border-box', width: drawerWidth },
+          }}
+          open
+        >
+          <DrawerContent onChangePassword={showChangePassword} onLogout={showLogoutConfirmation} />
+        </Drawer>
+      </Box>
+
+      {/* Conteúdo principal */}
+      <Box
+        component="main"
+        sx={{
+          flexGrow: 1,
+          width: { sm: `calc(100% - ${drawerWidth}px)` },
+          height: '100vh',
+          overflow: 'hidden',
+        }}
+      >
+        <Toolbar />
+        <Box sx={{ height: 'calc(100vh - 64px)', display: 'flex', flexDirection: 'column', p: 3 }}>
+          {/* Header - Fixo */}
+          <Box textAlign="center" sx={{ flexShrink: 0, pb: 4 }}>
+            <Typography variant="h5" color="text.secondary" mb={3} mt={3}>
               Selecione uma conexão Redis para começar
             </Typography>
             
-            <Box display="flex" gap={2} flexWrap="wrap" justifyContent="center">
+            <Box display="flex" gap={2} flexWrap="wrap" justifyContent="center" mb={2}>
               <Button
                 variant="contained"
                 size="large"
@@ -281,13 +458,15 @@ const ConnectionSelector = ({ onConnectionSuccess }: ConnectionSelectorProps) =>
             </Box>
           </Box>
 
-          {error && (
-            <Alert severity="error" sx={{ mb: 3 }}>
-              {error}
-            </Alert>
-          )}
+          {/* Área de conteúdo com scroll */}
+          <Box sx={{ flexGrow: 1, overflow: 'auto' }}>
+            {error && (
+              <Alert severity="error" sx={{ mb: 3 }}>
+                {error}
+              </Alert>
+            )}
 
-          {/* Connections Grid */}
+            {/* Connections Grid */}
           {!hasLoadedOnce ? (
             <Box textAlign="center" py={6}>
               <Box
@@ -459,8 +638,9 @@ const ConnectionSelector = ({ onConnectionSuccess }: ConnectionSelectorProps) =>
               ))}
             </Grid>
           )}
-        </Paper>
-      </Container>
+          </Box>
+        </Box>
+      </Box>
 
       {/* Connection Dialog */}
       <ConnectionDialog
@@ -474,6 +654,45 @@ const ConnectionSelector = ({ onConnectionSuccess }: ConnectionSelectorProps) =>
         open={errorDialog.open}
         message={errorDialog.message}
         onClose={() => setErrorDialog({ open: false, message: '' })}
+      />
+
+      {/* Delete Connection Dialog */}
+      <ConfirmationDialog
+        open={deleteDialog.open}
+        onClose={() => setDeleteDialog({ open: false })}
+        onConfirm={handleConfirmDelete}
+        title="Confirmar Exclusão"
+        message={`Tem certeza que deseja excluir a conexão "${deleteDialog.connectionName}"?`}
+        confirmText="Excluir Conexão"
+        severity="error"
+        icon={<DeleteIcon />}
+        alertMessage="⚠️ Esta ação não pode ser desfeita!"
+        alertSeverity="warning"
+        description="Todas as configurações desta conexão serão permanentemente removidas."
+      />
+
+      {/* Clear All Connections Dialog */}
+      <ConfirmationDialog
+        open={clearAllDialog}
+        onClose={() => setClearAllDialog(false)}
+        onConfirm={handleConfirmClearAll}
+        title="Limpar Todas as Conexões"
+        message="Tem certeza que deseja excluir todas as conexões salvas?"
+        confirmText="Limpar Tudo"
+        severity="error"
+        icon={<ClearAllIcon />}
+        alertMessage="🚨 Esta ação não pode ser desfeita!"
+        alertSeverity="error"
+        description="Todas as configurações de conexão serão permanentemente removidas e você precisará reconfigurá-las."
+      />
+
+      {/* Auth Modals (Logout + Change Password) */}
+      <AuthModals
+        logoutDialogOpen={logoutDialogOpen}
+        changePasswordDialogOpen={changePasswordDialogOpen}
+        onConfirmLogout={handleConfirmLogout}
+        onCloseLogoutDialog={closeLogoutDialog}
+        onCloseChangePasswordDialog={closeChangePasswordDialog}
       />
     </Box>
   );

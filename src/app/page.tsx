@@ -25,11 +25,11 @@ import {
 } from '@mui/icons-material';
 import { useSelector } from 'react-redux';
 import { RootState } from '@/store';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuthWithModals } from '@/hooks/useAuthWithModals';
 import LoadingScreen from '@/components/LoadingScreen';
 import PasswordSetup from '@/components/PasswordSetup';
 import LoginForm from '@/components/LoginForm';
-import ChangePasswordDialog from '@/components/ChangePasswordDialog';
+import AuthModals from '@/components/AuthModals';
 import ConnectionSelector from '@/components/ConnectionSelector';
 import ConnectionSwitcher from '@/components/ConnectionSwitcher';
 import ConnectionDialog from '@/components/ConnectionDialog';
@@ -48,11 +48,23 @@ export default function Home() {
   const [activeTab, setActiveTab] = useState<TabType>('browser');
   const [appState, setAppState] = useState<AppState>('connection-selection');
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [changePasswordOpen, setChangePasswordOpen] = useState(false);
   const [connectionDialogOpen, setConnectionDialogOpen] = useState(false);
   
   const { activeConnection } = useSelector((state: RootState) => state.connection);
-  const { isAuthenticated, isLoading, hasPassword, isHydrated, logout, refreshAuth } = useAuth();
+  const { 
+    isAuthenticated, 
+    isLoading, 
+    hasPassword, 
+    isHydrated, 
+    refreshAuth,
+    logoutDialogOpen,
+    changePasswordDialogOpen,
+    showLogoutConfirmation,
+    handleConfirmLogout,
+    showChangePassword,
+    closeLogoutDialog,
+    closeChangePasswordDialog
+  } = useAuthWithModals();
 
 
   // Effect to manage app state based on active connection
@@ -202,7 +214,7 @@ export default function Home() {
               variant="outlined"
               size="small"
               startIcon={<ChangePasswordIcon />}
-              onClick={() => setChangePasswordOpen(true)}
+              onClick={showChangePassword}
             >
               Trocar Senha
             </Button>
@@ -212,7 +224,7 @@ export default function Home() {
               size="small"
               color="error"
               startIcon={<LogoutIcon />}
-              onClick={logout}
+              onClick={showLogoutConfirmation}
             >
               Sair
             </Button>
@@ -302,10 +314,13 @@ export default function Home() {
           {renderContent()}
         </Box>
 
-        <ChangePasswordDialog
-          open={changePasswordOpen}
-          onClose={() => setChangePasswordOpen(false)}
-          onSuccess={() => setChangePasswordOpen(false)}
+        {/* Auth Modals (Logout + Change Password) */}
+        <AuthModals
+          logoutDialogOpen={logoutDialogOpen}
+          changePasswordDialogOpen={changePasswordDialogOpen}
+          onConfirmLogout={handleConfirmLogout}
+          onCloseLogoutDialog={closeLogoutDialog}
+          onCloseChangePasswordDialog={closeChangePasswordDialog}
         />
 
         <ConnectionDialog

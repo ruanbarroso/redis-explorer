@@ -143,10 +143,12 @@ class RedisClientService {
       const result = await response.json();
       return result.stats;
     } catch (error) {
-      if (error instanceof Error) {
+      // Only log non-connection errors
+      if (error instanceof Error && 
+          !error.message.includes('502') && 
+          !error.message.includes('503') &&
+          !error.message.includes('Failed to fetch')) {
         console.error('Error fetching stats:', error.message);
-      } else {
-        console.error('Error fetching stats:', error);
       }
       return null;
     }
@@ -170,10 +172,12 @@ class RedisClientService {
       const result = await response.json();
       return result.info;
     } catch (error) {
-      if (error instanceof Error) {
+      // Only log non-connection errors
+      if (error instanceof Error && 
+          !error.message.includes('502') && 
+          !error.message.includes('503') &&
+          !error.message.includes('Failed to fetch')) {
         console.error('Error getting info:', error.message);
-      } else {
-        console.error('Error getting info:', error);
       }
       return null;
     }
@@ -192,7 +196,13 @@ class RedisClientService {
       const result = await response.json();
       return result.slowLog || [];
     } catch (error) {
-      console.error('Error getting slow log:', error);
+      // Only log non-connection errors
+      if (error instanceof Error && 
+          !error.message.includes('502') && 
+          !error.message.includes('503') &&
+          !error.message.includes('Failed to fetch')) {
+        console.error('Error getting slow log:', error.message);
+      }
       return [];
     }
   }

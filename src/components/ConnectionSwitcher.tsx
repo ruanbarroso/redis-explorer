@@ -15,7 +15,7 @@ import {
 } from '@mui/material';
 import {
   KeyboardArrowDown as ArrowDownIcon,
-  Wifi as WifiIcon,
+  Link as LinkIcon,
   Lock as LockIcon,
   Settings as SettingsIcon,
 } from '@mui/icons-material';
@@ -109,15 +109,16 @@ const ConnectionSwitcher = ({ onManageConnections }: ConnectionSwitcherProps) =>
         <Box display="flex" alignItems="center" gap={1}>
           <Avatar
             sx={{
-              width: 24,
-              height: 24,
-              bgcolor: activeConnection.ssl ? 'success.main' : 'primary.light',
+              width: 32,
+              height: 32,
+              bgcolor: activeConnection.ssl ? 'success.main' : 'primary.main',
+              mr: 1,
             }}
           >
             {activeConnection.ssl ? (
-              <LockIcon sx={{ fontSize: 14 }} />
+              <LockIcon sx={{ fontSize: 16 }} />
             ) : (
-              <WifiIcon sx={{ fontSize: 14 }} />
+              <LinkIcon sx={{ fontSize: 16 }} />
             )}
           </Avatar>
           <Box textAlign="left">
@@ -125,7 +126,6 @@ const ConnectionSwitcher = ({ onManageConnections }: ConnectionSwitcherProps) =>
               {activeConnection.name}
             </Typography>
             <Typography variant="caption" sx={{ opacity: 0.8 }}>
-              {activeConnection.host}:{activeConnection.port}
             </Typography>
           </Box>
         </Box>
@@ -152,21 +152,6 @@ const ConnectionSwitcher = ({ onManageConnections }: ConnectionSwitcherProps) =>
         </Box>
 
         <MenuItem disabled>
-          <ListItemIcon>
-            <Avatar
-              sx={{
-                width: 32,
-                height: 32,
-                bgcolor: activeConnection.ssl ? 'success.main' : 'primary.main',
-              }}
-            >
-              {activeConnection.ssl ? (
-                <LockIcon sx={{ fontSize: 16 }} />
-              ) : (
-                <WifiIcon sx={{ fontSize: 16 }} />
-              )}
-            </Avatar>
-          </ListItemIcon>
           <ListItemText
             primary={activeConnection.name}
             secondary={`${activeConnection.host}:${activeConnection.port} (DB: ${activeConnection.database || 0})`}
@@ -210,18 +195,9 @@ const ConnectionSwitcher = ({ onManageConnections }: ConnectionSwitcherProps) =>
                   onClick={() => handleConnectionSelect(connection)}
                   disabled={isConnecting}
                 >
-                  <ListItemIcon>
-                    <Avatar sx={{ width: 24, height: 24, bgcolor: 'primary.main' }}>
-                      {connection.password ? (
-                        <LockIcon sx={{ fontSize: 16 }} />
-                      ) : (
-                        <WifiIcon sx={{ fontSize: 16 }} />
-                      )}
-                    </Avatar>
-                  </ListItemIcon>
                   <ListItemText
                     primary={connection.name}
-                    secondary={`${connection.host}:${connection.port}`}
+                    secondary={`${connection.host}:${connection.port} (DB: ${connection.database || 0})`}
                   />
                 </MenuItem>
               ))}
@@ -229,7 +205,7 @@ const ConnectionSwitcher = ({ onManageConnections }: ConnectionSwitcherProps) =>
           <Divider key="other-divider" />
         ]}
 
-        <MenuItem onClick={handleManageConnections}>
+        <MenuItem onClick={handleManageConnections} sx={{ mt: 1 }}>
           <ListItemIcon>
             <SettingsIcon />
           </ListItemIcon>

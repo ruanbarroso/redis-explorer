@@ -50,7 +50,7 @@ const Dashboard = () => {
   const [autoRefresh, setAutoRefresh] = useState(true);
 
   useEffect(() => {
-    if (activeConnection) {
+    if (activeConnection?.connected) {
       // Initial load with a small delay to ensure connection is ready
       const timeoutId = setTimeout(() => {
         handleRefresh();
@@ -58,7 +58,10 @@ const Dashboard = () => {
       
       if (autoRefresh) {
         const interval = setInterval(() => {
-          handleRefresh();
+          // Only refresh if still connected
+          if (activeConnection?.connected) {
+            handleRefresh();
+          }
         }, 5000);
         
         return () => {
@@ -69,7 +72,7 @@ const Dashboard = () => {
       
       return () => clearTimeout(timeoutId);
     }
-  }, [activeConnection, autoRefresh]);
+  }, [activeConnection?.connected, autoRefresh]);
 
   useEffect(() => {
     if (stats) {
@@ -89,20 +92,37 @@ const Dashboard = () => {
   }, [stats]);
 
   const handleRefresh = async () => {
-    if (!activeConnection) {
-      console.warn('No active connection for dashboard refresh');
-      return;
+    if (!activeConnection?.connected) {
+      return; // Silently return if no active connection
     }
 
     try {
       // Dispatch actions with error handling
-      await Promise.allSettled([
+      const results = await Promise.allSettled([
         dispatch(fetchStats()),
         dispatch(fetchInfo()),
         dispatch(fetchSlowLog(10))
       ]);
+
+      // Only log errors if they're not connection-related (502, 503, etc.)
+      results.forEach((result, index) => {
+        if (result.status === 'rejected') {
+          const error = result.reason;
+          // Only log if it's not a network/connection error
+          if (!error?.message?.includes('502') && 
+              !error?.message?.includes('503') && 
+              !error?.message?.includes('Failed to fetch')) {
+            const actions = ['fetchStats', 'fetchInfo', 'fetchSlowLog'];
+            console.error(`Error in ${actions[index]}:`, error);
+          }
+        }
+      });
     } catch (error) {
-      console.error('Error during dashboard refresh:', error);
+      // Only log unexpected errors
+      if (!error?.toString().includes('502') && 
+          !error?.toString().includes('Failed to fetch')) {
+        console.error('Unexpected error during dashboard refresh:', error);
+      }
     }
   };
 
