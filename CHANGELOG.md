@@ -1,3 +1,9 @@
+## [1.3.0](https://github.com/ruanbarroso/redis-explorer/compare/v1.2.5...v1.3.0) (2025-10-22)
+
+### 🚀 Features
+
+* Implementação completa da interface de gerenciamento de conexões Redis ([7fcffcc](https://github.com/ruanbarroso/redis-explorer/commit/7fcffcc0f11e6e62e79546af2268501c51d36d9d))
+
 ## [1.2.5](https://github.com/ruanbarroso/redis-explorer/compare/v1.2.4...v1.2.5) (2025-10-21)
 
 ### 🐛 Bug Fixes
