@@ -160,14 +160,28 @@ const Terminal = () => {
   }
 
   return (
-    <Box height="100%" display="flex" flexDirection="column">
+    <Box 
+      height="100%" 
+      display="flex" 
+      flexDirection="column"
+      sx={{ 
+        maxHeight: '100vh',
+        overflow: 'hidden'
+      }}
+    >
       {error && (
-        <Alert severity="error" sx={{ mb: 2 }}>
+        <Alert severity="error" sx={{ mb: 2, flexShrink: 0 }}>
           {error}
         </Alert>
       )}
 
-      <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
+      <Box 
+        display="flex" 
+        justifyContent="space-between" 
+        alignItems="center" 
+        mb={2}
+        sx={{ flexShrink: 0 }}
+      >
         <Typography variant="h5">Redis CLI</Typography>
         <Box display="flex" gap={1}>
           <IconButton onClick={clearHistory} disabled={history.length === 0}>
@@ -176,18 +190,33 @@ const Terminal = () => {
         </Box>
       </Box>
 
-      <Card sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
-        <CardContent sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column', p: 0 }}>
+      <Card sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
+        <CardContent sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column', p: 0, minHeight: 0 }}>
           {/* Command History */}
           <Box
             ref={historyRef}
             sx={{
               flexGrow: 1,
-              overflow: 'auto',
+              overflowY: 'auto',
+              overflowX: 'hidden',
               p: 2,
               backgroundColor: '#0d1117',
               fontFamily: 'monospace',
               fontSize: '14px',
+              minHeight: 0,
+              '&::-webkit-scrollbar': {
+                width: '8px',
+              },
+              '&::-webkit-scrollbar-track': {
+                background: '#161b22',
+              },
+              '&::-webkit-scrollbar-thumb': {
+                background: '#30363d',
+                borderRadius: '4px',
+              },
+              '&::-webkit-scrollbar-thumb:hover': {
+                background: '#484f58',
+              },
             }}
           >
             {history.length === 0 ? (
@@ -300,6 +329,7 @@ const Terminal = () => {
               p: 2,
               borderTop: '1px solid #30363d',
               backgroundColor: '#0d1117',
+              flexShrink: 0,
             }}
           >
             <Box display="flex" alignItems="center" gap={1}>

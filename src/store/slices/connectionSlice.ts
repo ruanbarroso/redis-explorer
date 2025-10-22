@@ -10,9 +10,37 @@ interface ConnectionState {
   error: string | null;
 }
 
+// Load active connection from localStorage if available
+const loadActiveConnectionFromStorage = (): RedisConnection | null => {
+  if (typeof window !== 'undefined') {
+    try {
+      const stored = localStorage.getItem('redis-explorer-active-connection');
+      return stored ? JSON.parse(stored) : null;
+    } catch {
+      return null;
+    }
+  }
+  return null;
+};
+
+// Save active connection to localStorage
+const saveActiveConnectionToStorage = (connection: RedisConnection | null) => {
+  if (typeof window !== 'undefined') {
+    try {
+      if (connection) {
+        localStorage.setItem('redis-explorer-active-connection', JSON.stringify(connection));
+      } else {
+        localStorage.removeItem('redis-explorer-active-connection');
+      }
+    } catch {
+      // Ignore localStorage errors
+    }
+  }
+};
+
 const initialState: ConnectionState = {
   connections: [],
-  activeConnection: null,
+  activeConnection: loadActiveConnectionFromStorage(),
   isConnecting: false,
   error: null,
 };
@@ -173,6 +201,8 @@ const connectionSlice = createSlice({
         }
         
         state.activeConnection = { ...action.payload, connected: true };
+        // Persist to localStorage
+        saveActiveConnectionToStorage(state.activeConnection);
       })
       .addCase(connectToRedis.rejected, (state, action) => {
         state.isConnecting = false;
@@ -181,6 +211,8 @@ const connectionSlice = createSlice({
       .addCase(disconnectFromRedis.fulfilled, (state, action) => {
         if (state.activeConnection?.id === action.payload) {
           state.activeConnection = null;
+          // Remove from localStorage
+          saveActiveConnectionToStorage(null);
         }
         const index = state.connections.findIndex(
           (conn) => conn.id === action.payload
@@ -215,6 +247,8 @@ const connectionSlice = createSlice({
         state.connections = state.connections.filter(conn => conn.id !== action.payload);
         if (state.activeConnection?.id === action.payload) {
           state.activeConnection = null;
+          // Remove from localStorage
+          saveActiveConnectionToStorage(null);
         }
       });
   },

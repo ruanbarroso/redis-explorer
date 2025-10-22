@@ -19,83 +19,118 @@ import {
   Storage as StorageIcon,
   Dashboard as DashboardIcon,
   Terminal as TerminalIcon,
-  Settings as SettingsIcon,
   Menu as MenuIcon,
   Logout as LogoutIcon,
   VpnKey as ChangePasswordIcon,
 } from '@mui/icons-material';
 import { useSelector } from 'react-redux';
 import { RootState } from '@/store';
-import { useIsClient } from '@/hooks/useIsClient';
 import { useAuth } from '@/hooks/useAuth';
 import LoadingScreen from '@/components/LoadingScreen';
-import ClientOnly from '@/components/ClientOnly';
 import PasswordSetup from '@/components/PasswordSetup';
 import LoginForm from '@/components/LoginForm';
 import ChangePasswordDialog from '@/components/ChangePasswordDialog';
-import ConnectionManager from '@/components/ConnectionManager';
+import ConnectionSelector from '@/components/ConnectionSelector';
+import ConnectionSwitcher from '@/components/ConnectionSwitcher';
+import ConnectionDialog from '@/components/ConnectionDialog';
 import KeysBrowser from '@/components/KeysBrowser';
 import Dashboard from '@/components/Dashboard';
 import Terminal from '@/components/Terminal';
+import { RedisConnection } from '@/types/redis';
 
 const DRAWER_WIDTH = 240;
 
-type TabType = 'browser' | 'dashboard' | 'terminal' | 'settings';
+type TabType = 'browser' | 'dashboard' | 'terminal';
+type AppState = 'connection-selection' | 'main-app';
 
 export default function Home() {
   const theme = useTheme();
-  const isClient = useIsClient();
-  const [activeTab, setActiveTab] = useState<TabType>('settings');
+  const [activeTab, setActiveTab] = useState<TabType>('browser');
+  const [appState, setAppState] = useState<AppState>('connection-selection');
   const [mobileOpen, setMobileOpen] = useState(false);
   const [changePasswordOpen, setChangePasswordOpen] = useState(false);
+  const [connectionDialogOpen, setConnectionDialogOpen] = useState(false);
   
   const { activeConnection } = useSelector((state: RootState) => state.connection);
   const { isAuthenticated, isLoading, hasPassword, isHydrated, logout, refreshAuth } = useAuth();
 
 
+  // Effect to manage app state based on active connection
+  useEffect(() => {
+    if (isHydrated && isAuthenticated) {
+      if (activeConnection && appState === 'connection-selection') {
+        setAppState('main-app');
+      } else if (!activeConnection && appState === 'main-app') {
+        setAppState('connection-selection');
+      }
+    }
+  }, [activeConnection, appState, isHydrated, isAuthenticated]);
+
+  // Initialize app state based on existing active connection on page load
+  useEffect(() => {
+    if (isHydrated && isAuthenticated) {
+      if (activeConnection) {
+        setAppState('main-app');
+      } else {
+        setAppState('connection-selection');
+      }
+    }
+  }, [isHydrated, isAuthenticated, activeConnection]); // Include activeConnection to react to changes
+
   const handleDrawerToggle = () => {
     setMobileOpen(!mobileOpen);
   };
 
+  const handleConnectionSuccess = (connection: RedisConnection) => {
+    setAppState('main-app');
+    setActiveTab('browser');
+  };
+
+  const handleManageConnections = () => {
+    // This function is no longer needed since we go directly to connection selector
+  };
+
   const menuItems = [
-    { id: 'settings', label: 'Connections', icon: <SettingsIcon /> },
     { id: 'browser', label: 'Keys Browser', icon: <StorageIcon /> },
     { id: 'dashboard', label: 'Dashboard', icon: <DashboardIcon /> },
     { id: 'terminal', label: 'CLI', icon: <TerminalIcon /> },
   ];
 
-  return (
-    <ClientOnly fallback={<LoadingScreen />}>
-      {(() => {
-        // Mostra loading até que a autenticação seja verificada
-        if (!isHydrated || isLoading) {
-          return <LoadingScreen />;
-        }
+  // Mostra loading até que a autenticação seja verificada
+  if (!isHydrated || isLoading) {
+    return <LoadingScreen />;
+  }
 
-        // Se não tem senha configurada, mostra tela de setup
-        if (!hasPassword) {
-          return <PasswordSetup onSetupComplete={refreshAuth} />;
-        }
+  // Se não tem senha configurada, mostra tela de setup
+  if (!hasPassword) {
+    return <PasswordSetup onSetupComplete={refreshAuth} />;
+  }
 
-        // Se tem senha mas não está autenticado, mostra login
-        if (!isAuthenticated) {
-          return <LoginForm onLoginSuccess={refreshAuth} />;
-        }
+  // Se tem senha mas não está autenticado, mostra login
+  if (!isAuthenticated) {
+    return <LoginForm onLoginSuccess={refreshAuth} />;
+  }
 
-        // Renderiza a aplicação principal
-        return renderMainApp();
-      })()}
-    </ClientOnly>
-  );
+  // Renderiza baseado no estado da aplicação
+  if (appState === 'connection-selection') {
+    return (
+      <>
+        <ConnectionSelector onConnectionSuccess={handleConnectionSuccess} />
+        <ConnectionDialog
+          open={connectionDialogOpen}
+          onClose={() => setConnectionDialogOpen(false)}
+        />
+      </>
+    );
+  }
+
+  // Renderiza a aplicação principal
+  return renderMainApp();
+
 
   function renderMainApp() {
     const renderContent = () => {
-      // Always allow access to settings/connections tab
-      if (activeTab === 'settings') {
-        return <ConnectionManager onConnectionSuccess={() => setActiveTab('browser')} />;
-      }
-
-      // For other tabs, require active connection
+      // Require active connection for all tabs
       if (!activeConnection) {
         return (
           <Box
@@ -108,10 +143,10 @@ export default function Home() {
           >
             <StorageIcon sx={{ fontSize: 64, color: 'text.secondary' }} />
             <Typography variant="h5" color="text.secondary">
-              No Redis Connection
+              Nenhuma Conexão Redis
             </Typography>
             <Typography variant="body1" color="text.secondary">
-              Please connect to a Redis instance to start exploring
+              Por favor, conecte-se a uma instância Redis para começar a explorar
             </Typography>
           </Box>
         );
@@ -161,28 +196,6 @@ export default function Home() {
         </List>
         
         <Box sx={{ position: 'absolute', bottom: 16, left: 16, right: 16 }}>
-          {activeConnection && (
-            <Box
-              sx={{
-                p: 2,
-                backgroundColor: theme.palette.background.paper,
-                borderRadius: 1,
-                border: `1px solid ${theme.palette.divider}`,
-                mb: 2,
-              }}
-            >
-              <Typography variant="caption" color="text.secondary">
-                Connected to:
-              </Typography>
-              <Typography variant="body2" noWrap>
-                {activeConnection.name}
-              </Typography>
-              <Typography variant="caption" color="text.secondary">
-                {activeConnection.host}:{activeConnection.port}
-              </Typography>
-            </Box>
-          )}
-          
           <Box display="flex" flexDirection="column" gap={1}>
             <Button
               fullWidth
@@ -227,9 +240,15 @@ export default function Home() {
             >
               <MenuIcon />
             </IconButton>
-            <Typography variant="h6" noWrap component="div">
+            
+            <Typography variant="h6" noWrap component="div" sx={{ flexGrow: 1 }}>
               {menuItems.find(item => item.id === activeTab)?.label}
             </Typography>
+
+            {/* Connection Switcher */}
+            <ConnectionSwitcher
+              onManageConnections={handleManageConnections}
+            />
           </Toolbar>
         </AppBar>
 
@@ -287,6 +306,11 @@ export default function Home() {
           open={changePasswordOpen}
           onClose={() => setChangePasswordOpen(false)}
           onSuccess={() => setChangePasswordOpen(false)}
+        />
+
+        <ConnectionDialog
+          open={connectionDialogOpen}
+          onClose={() => setConnectionDialogOpen(false)}
         />
       </Box>
     );
