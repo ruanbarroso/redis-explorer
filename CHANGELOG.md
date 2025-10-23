@@ -1,3 +1,9 @@
+## [1.8.0](https://github.com/ruanbarroso/redis-explorer/compare/v1.7.0...v1.8.0) (2025-10-23)
+
+### 🚀 Features
+
+* add redis metrics dashboard with session persistence ([581b105](https://github.com/ruanbarroso/redis-explorer/commit/581b1052bb179755841ca8bd8ee9a3d74bbd85fb))
+
 ## [1.7.0](https://github.com/ruanbarroso/redis-explorer/compare/v1.6.0...v1.7.0) (2025-10-23)
 
 ### 🚀 Features
