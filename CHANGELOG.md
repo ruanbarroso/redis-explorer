@@ -1,3 +1,9 @@
+## [1.6.0](https://github.com/ruanbarroso/redis-explorer/compare/v1.5.0...v1.6.0) (2025-10-23)
+
+### 🚀 Features
+
+* Sistema completo de progresso com modal elegante ([e9cbe08](https://github.com/ruanbarroso/redis-explorer/commit/e9cbe087b51d5f0d8a92e4670c4fe6f5073c5323))
+
 ## [1.5.0](https://github.com/ruanbarroso/redis-explorer/compare/v1.4.0...v1.5.0) (2025-10-22)
 
 ### 🚀 Features
