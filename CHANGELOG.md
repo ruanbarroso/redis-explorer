@@ -1,3 +1,9 @@
+## [1.7.0](https://github.com/ruanbarroso/redis-explorer/compare/v1.6.0...v1.7.0) (2025-10-23)
+
+### 🚀 Features
+
+* Sistema de virtualização para performance com 32k+ chaves ([82068b8](https://github.com/ruanbarroso/redis-explorer/commit/82068b8e83a9e615ca846ec53515e817432735db))
+
 ## [1.6.0](https://github.com/ruanbarroso/redis-explorer/compare/v1.5.0...v1.6.0) (2025-10-23)
 
 ### 🚀 Features
