@@ -243,29 +243,27 @@ const KeysBrowser = () => {
     return (
       <Box height="100%" display="flex" flexDirection="column">
         {/* Header da visualização de conteúdo */}
-        <Box 
-          display="flex" 
-          alignItems="center" 
-          gap={2} 
+        <Box
+          display="flex"
+          alignItems="flex-start"
+          gap={1}
           mb={2}
           sx={{ flexShrink: 0 }}
         >
-          <IconButton onClick={handleBackToNavigation}>
+          <IconButton onClick={handleBackToNavigation} sx={{ mt: 0.5 }}>
             <ArrowBackIcon />
           </IconButton>
-          <Typography variant="h6" sx={{ flexGrow: 1 }}>
+          <Typography 
+            variant="h6" 
+            sx={{ 
+              flexGrow: 1, 
+              wordBreak: 'break-all',
+              overflowWrap: 'break-word',
+              lineHeight: 1.4
+            }}
+          >
             {selectedKey}
           </Typography>
-          <IconButton 
-            onClick={() => {
-              console.log('🗑️ Botão excluir clicado na visualização de conteúdo para:', selectedKey);
-              handleKeyDelete(selectedKey);
-            }} 
-            color="error"
-            size="small"
-          >
-            <DeleteIcon />
-          </IconButton>
         </Box>
 
         {/* Conteúdo da chave em tela cheia */}
@@ -281,6 +279,10 @@ const KeysBrowser = () => {
               onSave={() => {
                 handleRefresh();
                 dispatch(fetchValue(selectedKey));
+              }}
+              onDelete={() => {
+                console.log('🗑️ Botão excluir clicado na visualização de conteúdo para:', selectedKey);
+                handleKeyDelete(selectedKey);
               }}
             />
           ) : (

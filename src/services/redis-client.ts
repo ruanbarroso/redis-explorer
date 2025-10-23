@@ -101,7 +101,7 @@ class RedisClientService {
       }
 
       const result = await response.json();
-      return result.value;
+      return result;
     } catch (error) {
       console.error('Error getting value:', error);
       return null;

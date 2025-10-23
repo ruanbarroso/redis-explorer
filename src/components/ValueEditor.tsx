@@ -47,24 +47,37 @@ interface ValueEditorProps {
   keyName: string;
   value: RedisValue;
   onSave: () => void;
+  onDelete?: () => void;
 }
 
-const ValueEditor = ({ keyName, value, onSave }: ValueEditorProps) => {
+const ValueEditor = ({ keyName, value, onSave, onDelete }: ValueEditorProps) => {
   const dispatch = useDispatch<AppDispatch>();
   const [editedValue, setEditedValue] = useState<any>(value.value);
   const [ttl, setTtl] = useState<number>(value.ttl > 0 ? value.ttl : -1);
-  const [isEditing, setIsEditing] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [newField, setNewField] = useState({ key: '', value: '' });
   const [error, setError] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<'raw' | 'json'>('json');
+  const [hasChanges, setHasChanges] = useState(false);
+
+  const calculateSize = () => {
+    if (editedValue === null || editedValue === undefined) return 0;
+    if (typeof editedValue === 'string') return editedValue.length;
+    return JSON.stringify(editedValue).length;
+  };
 
   useEffect(() => {
     setEditedValue(value.value);
     setTtl(value.ttl > 0 ? value.ttl : -1);
-    setIsEditing(false);
+    setHasChanges(false);
     setError(null);
   }, [value]);
+
+  useEffect(() => {
+    const valueChanged = JSON.stringify(editedValue) !== JSON.stringify(value.value);
+    const ttlChanged = ttl !== (value.ttl > 0 ? value.ttl : -1);
+    setHasChanges(valueChanged || ttlChanged);
+  }, [editedValue, ttl, value]);
 
   const handleSave = async () => {
     try {
@@ -76,7 +89,7 @@ const ValueEditor = ({ keyName, value, onSave }: ValueEditorProps) => {
           ttl: ttl > 0 ? ttl : undefined,
         })
       ).unwrap();
-      setIsEditing(false);
+      setHasChanges(false);
       setError(null);
       onSave();
     } catch (err) {
@@ -87,7 +100,7 @@ const ValueEditor = ({ keyName, value, onSave }: ValueEditorProps) => {
   const handleCancel = () => {
     setEditedValue(value.value);
     setTtl(value.ttl > 0 ? value.ttl : -1);
-    setIsEditing(false);
+    setHasChanges(false);
     setError(null);
   };
 
@@ -126,7 +139,7 @@ const ValueEditor = ({ keyName, value, onSave }: ValueEditorProps) => {
 
     return (
       <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-        <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
+        <Box display="flex" justifyContent="space-between" alignItems="center" mb={1}>
           <Box display="flex" gap={1} alignItems="center">
             <ToggleButtonGroup
               value={viewMode}
@@ -169,6 +182,21 @@ const ValueEditor = ({ keyName, value, onSave }: ValueEditorProps) => {
               <Chip label="Plain Text" size="small" color="default" />
             )}
           </Box>
+          
+          <Box display="flex" gap={1} alignItems="center">
+            <Tooltip title="Time to Live (seconds). Use -1 for no expiry">
+              <Typography variant="body2" color="text.secondary" sx={{ cursor: 'help' }}>
+                TTL:
+              </Typography>
+            </Tooltip>
+            <TextField
+              type="number"
+              value={ttl}
+              onChange={(e) => setTtl(parseInt(e.target.value))}
+              size="small"
+              sx={{ width: 100 }}
+            />
+          </Box>
         </Box>
         
         <Box sx={{ flexGrow: 1 }}>
@@ -179,7 +207,7 @@ const ValueEditor = ({ keyName, value, onSave }: ValueEditorProps) => {
             value={displayValue}
             onChange={(value) => setEditedValue(value || '')}
             options={{
-              readOnly: !isEditing,
+              readOnly: false,
               minimap: { enabled: false },
               scrollBeyondLastLine: false,
               wordWrap: 'on',
@@ -194,17 +222,65 @@ const ValueEditor = ({ keyName, value, onSave }: ValueEditorProps) => {
 
   const renderHashEditor = () => (
     <Box>
-      <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
+      <Box display="flex" justifyContent="space-between" alignItems="center" mb={1}>
         <Typography variant="h6">Hash Fields</Typography>
-        {isEditing && (
-          <Button
-            startIcon={<AddIcon />}
-            onClick={() => setDialogOpen(true)}
+        <Box display="flex" gap={1} alignItems="center">
+          <Tooltip title="Time to Live (seconds). Use -1 for no expiry">
+            <Typography variant="body2" color="text.secondary" sx={{ cursor: 'help' }}>
+              TTL:
+            </Typography>
+          </Tooltip>
+          <TextField
+            type="number"
+            value={ttl}
+            onChange={(e) => setTtl(parseInt(e.target.value))}
             size="small"
-          >
-            Add Field
-          </Button>
-        )}
+            sx={{ width: 100 }}
+          />
+          {hasChanges ? (
+            <>
+              <Button 
+                onClick={handleCancel} 
+                size="small"
+                variant="outlined"
+                color="warning"
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="contained"
+                startIcon={<SaveIcon />}
+                onClick={handleSave}
+                size="small"
+                color="success"
+              >
+                Save
+              </Button>
+            </>
+          ) : (
+            <>
+              <Button
+                startIcon={<AddIcon />}
+                onClick={() => setDialogOpen(true)}
+                size="small"
+                variant="outlined"
+              >
+                Add Field
+              </Button>
+              {onDelete && (
+                <Button
+                  variant="outlined"
+                  startIcon={<DeleteIcon />}
+                  onClick={onDelete}
+                  size="small"
+                  color="error"
+                >
+                  Remove
+                </Button>
+              )}
+            </>
+          )}
+        </Box>
       </Box>
       <TableContainer component={Paper}>
         <Table size="small">
@@ -212,7 +288,7 @@ const ValueEditor = ({ keyName, value, onSave }: ValueEditorProps) => {
             <TableRow>
               <TableCell>Field</TableCell>
               <TableCell>Value</TableCell>
-              {isEditing && <TableCell width={100}>Actions</TableCell>}
+              <TableCell width={100}>Actions</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
@@ -220,35 +296,27 @@ const ValueEditor = ({ keyName, value, onSave }: ValueEditorProps) => {
               <TableRow key={field}>
                 <TableCell sx={{ fontFamily: 'monospace' }}>{field}</TableCell>
                 <TableCell>
-                  {isEditing ? (
-                    <TextField
-                      fullWidth
-                      size="small"
-                      value={fieldValue as string}
-                      onChange={(e) =>
-                        setEditedValue({
-                          ...editedValue,
-                          [field]: e.target.value,
-                        })
-                      }
-                    />
-                  ) : (
-                    <Typography sx={{ fontFamily: 'monospace', wordBreak: 'break-all' }}>
-                      {String(fieldValue)}
-                    </Typography>
-                  )}
+                  <TextField
+                    fullWidth
+                    size="small"
+                    value={fieldValue as string}
+                    onChange={(e) =>
+                      setEditedValue({
+                        ...editedValue,
+                        [field]: e.target.value,
+                      })
+                    }
+                  />
                 </TableCell>
-                {isEditing && (
-                  <TableCell>
-                    <IconButton
-                      size="small"
-                      onClick={() => handleDeleteField(field)}
-                      color="error"
-                    >
-                      <DeleteIcon fontSize="small" />
-                    </IconButton>
-                  </TableCell>
-                )}
+                <TableCell>
+                  <IconButton
+                    size="small"
+                    onClick={() => handleDeleteField(field)}
+                    color="error"
+                  >
+                    <DeleteIcon fontSize="small" />
+                  </IconButton>
+                </TableCell>
               </TableRow>
             ))}
           </TableBody>
@@ -259,17 +327,65 @@ const ValueEditor = ({ keyName, value, onSave }: ValueEditorProps) => {
 
   const renderListEditor = () => (
     <Box>
-      <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
+      <Box display="flex" justifyContent="space-between" alignItems="center" mb={1}>
         <Typography variant="h6">List Items</Typography>
-        {isEditing && (
-          <Button
-            startIcon={<AddIcon />}
-            onClick={() => setDialogOpen(true)}
+        <Box display="flex" gap={1} alignItems="center">
+          <Tooltip title="Time to Live (seconds). Use -1 for no expiry">
+            <Typography variant="body2" color="text.secondary" sx={{ cursor: 'help' }}>
+              TTL:
+            </Typography>
+          </Tooltip>
+          <TextField
+            type="number"
+            value={ttl}
+            onChange={(e) => setTtl(parseInt(e.target.value))}
             size="small"
-          >
-            Add Item
-          </Button>
-        )}
+            sx={{ width: 100 }}
+          />
+          {hasChanges ? (
+            <>
+              <Button 
+                onClick={handleCancel} 
+                size="small"
+                variant="outlined"
+                color="warning"
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="contained"
+                startIcon={<SaveIcon />}
+                onClick={handleSave}
+                size="small"
+                color="success"
+              >
+                Save
+              </Button>
+            </>
+          ) : (
+            <>
+              <Button
+                startIcon={<AddIcon />}
+                onClick={() => setDialogOpen(true)}
+                size="small"
+                variant="outlined"
+              >
+                Add Item
+              </Button>
+              {onDelete && (
+                <Button
+                  variant="outlined"
+                  startIcon={<DeleteIcon />}
+                  onClick={onDelete}
+                  size="small"
+                  color="error"
+                >
+                  Remove
+                </Button>
+              )}
+            </>
+          )}
+        </Box>
       </Box>
       <TableContainer component={Paper}>
         <Table size="small">
@@ -277,7 +393,7 @@ const ValueEditor = ({ keyName, value, onSave }: ValueEditorProps) => {
             <TableRow>
               <TableCell width={80}>Index</TableCell>
               <TableCell>Value</TableCell>
-              {isEditing && <TableCell width={100}>Actions</TableCell>}
+              <TableCell width={100}>Actions</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
@@ -285,34 +401,26 @@ const ValueEditor = ({ keyName, value, onSave }: ValueEditorProps) => {
               <TableRow key={index}>
                 <TableCell sx={{ fontFamily: 'monospace' }}>{index}</TableCell>
                 <TableCell>
-                  {isEditing ? (
-                    <TextField
-                      fullWidth
-                      size="small"
-                      value={item}
-                      onChange={(e) => {
-                        const newValue = [...editedValue];
-                        newValue[index] = e.target.value;
-                        setEditedValue(newValue);
-                      }}
-                    />
-                  ) : (
-                    <Typography sx={{ fontFamily: 'monospace', wordBreak: 'break-all' }}>
-                      {String(item)}
-                    </Typography>
-                  )}
+                  <TextField
+                    fullWidth
+                    size="small"
+                    value={item}
+                    onChange={(e) => {
+                      const newValue = [...editedValue];
+                      newValue[index] = e.target.value;
+                      setEditedValue(newValue);
+                    }}
+                  />
                 </TableCell>
-                {isEditing && (
-                  <TableCell>
-                    <IconButton
-                      size="small"
-                      onClick={() => handleDeleteField(index)}
-                      color="error"
-                    >
-                      <DeleteIcon fontSize="small" />
-                    </IconButton>
-                  </TableCell>
-                )}
+                <TableCell>
+                  <IconButton
+                    size="small"
+                    onClick={() => handleDeleteField(index)}
+                    color="error"
+                  >
+                    <DeleteIcon fontSize="small" />
+                  </IconButton>
+                </TableCell>
               </TableRow>
             ))}
           </TableBody>
@@ -323,58 +431,98 @@ const ValueEditor = ({ keyName, value, onSave }: ValueEditorProps) => {
 
   const renderSetEditor = () => (
     <Box>
-      <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
+      <Box display="flex" justifyContent="space-between" alignItems="center" mb={1}>
         <Typography variant="h6">Set Members</Typography>
-        {isEditing && (
-          <Button
-            startIcon={<AddIcon />}
-            onClick={() => setDialogOpen(true)}
+        <Box display="flex" gap={1} alignItems="center">
+          <Tooltip title="Time to Live (seconds). Use -1 for no expiry">
+            <Typography variant="body2" color="text.secondary" sx={{ cursor: 'help' }}>
+              TTL:
+            </Typography>
+          </Tooltip>
+          <TextField
+            type="number"
+            value={ttl}
+            onChange={(e) => setTtl(parseInt(e.target.value))}
             size="small"
-          >
-            Add Member
-          </Button>
-        )}
+            sx={{ width: 100 }}
+          />
+          {hasChanges ? (
+            <>
+              <Button 
+                onClick={handleCancel} 
+                size="small"
+                variant="outlined"
+                color="warning"
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="contained"
+                startIcon={<SaveIcon />}
+                onClick={handleSave}
+                size="small"
+                color="success"
+              >
+                Save
+              </Button>
+            </>
+          ) : (
+            <>
+              <Button
+                startIcon={<AddIcon />}
+                onClick={() => setDialogOpen(true)}
+                size="small"
+                variant="outlined"
+              >
+                Add Member
+              </Button>
+              {onDelete && (
+                <Button
+                  variant="outlined"
+                  startIcon={<DeleteIcon />}
+                  onClick={onDelete}
+                  size="small"
+                  color="error"
+                >
+                  Remove
+                </Button>
+              )}
+            </>
+          )}
+        </Box>
       </Box>
       <TableContainer component={Paper}>
         <Table size="small">
           <TableHead>
             <TableRow>
               <TableCell>Member</TableCell>
-              {isEditing && <TableCell width={100}>Actions</TableCell>}
+              <TableCell width={100}>Actions</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
             {(editedValue || []).map((member: any, index: number) => (
               <TableRow key={index}>
                 <TableCell>
-                  {isEditing ? (
-                    <TextField
-                      fullWidth
-                      size="small"
-                      value={member}
-                      onChange={(e) => {
-                        const newValue = [...editedValue];
-                        newValue[index] = e.target.value;
-                        setEditedValue(newValue);
-                      }}
-                    />
-                  ) : (
-                    <Typography sx={{ fontFamily: 'monospace', wordBreak: 'break-all' }}>
-                      {String(member)}
-                    </Typography>
-                  )}
+                  <TextField
+                    fullWidth
+                    size="small"
+                    value={member}
+                    onChange={(e) => {
+                      const newValue = [...editedValue];
+                      newValue[index] = e.target.value;
+                      setEditedValue(newValue);
+                    }}
+                  />
                 </TableCell>
-                {isEditing && (
-                  <TableCell>
-                    <IconButton
-                      size="small"
-                      onClick={() => handleDeleteField(index)}
-                      color="error"
-                    >
-                      <DeleteIcon fontSize="small" />
-                    </IconButton>
-                  </TableCell>
-                )}
+                <TableCell>
+                  <IconButton
+                    size="small"
+                    onClick={() => handleDeleteField(index)}
+                    color="error"
+                  >
+                    <DeleteIcon fontSize="small" />
+                  </IconButton>
+                </TableCell>
               </TableRow>
             ))}
           </TableBody>
@@ -382,6 +530,41 @@ const ValueEditor = ({ keyName, value, onSave }: ValueEditorProps) => {
       </TableContainer>
     </Box>
   );
+
+  const renderFallbackEditor = () => {
+    const stringValue = typeof editedValue === 'string' 
+      ? editedValue 
+      : JSON.stringify(editedValue, null, 2);
+
+    const typeLabel = value.type ? value.type.toUpperCase() : 'UNKNOWN';
+
+    return (
+      <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+        <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
+          <Chip 
+            label={`${typeLabel} - Read Only`} 
+            size="small" 
+            color="warning" 
+          />
+        </Box>
+        
+        <Box sx={{ flexGrow: 1 }}>
+          <MonacoEditor
+            height="100%"
+            language="text"
+            theme="vs-dark"
+            value={stringValue}
+            options={{
+              readOnly: true,
+              minimap: { enabled: false },
+              scrollBeyondLastLine: false,
+              wordWrap: 'on',
+            }}
+          />
+        </Box>
+      </Box>
+    );
+  };
 
   const renderEditor = () => {
     switch (value.type) {
@@ -394,32 +577,31 @@ const ValueEditor = ({ keyName, value, onSave }: ValueEditorProps) => {
       case 'set':
         return renderSetEditor();
       default:
-        return (
-          <Typography color="text.secondary">
-            Editor for {value.type} type is not implemented yet
-          </Typography>
-        );
+        return renderFallbackEditor();
     }
   };
 
   return (
     <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
       {error && (
-        <Alert severity="error" sx={{ mb: 2 }}>
+        <Alert severity="error" sx={{ mb: 0.5 }}>
           {error}
         </Alert>
       )}
 
-      <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
-        <Box display="flex" gap={2} alignItems="center">
-          <Typography variant="body2" color="text.secondary">
-            Size: {value.size} | TTL: {formatTTL(value.ttl)}
-          </Typography>
-        </Box>
+      <Box display="flex" justifyContent="space-between" alignItems="center" mb={1.5}>
+        <Typography variant="body2" color="text.secondary">
+          Size: {calculateSize()} bytes
+        </Typography>
         <Box display="flex" gap={1}>
-          {isEditing ? (
+          {hasChanges ? (
             <>
-              <Button onClick={handleCancel} size="small">
+              <Button 
+                onClick={handleCancel} 
+                size="small"
+                variant="outlined"
+                color="warning"
+              >
                 Cancel
               </Button>
               <Button
@@ -427,35 +609,26 @@ const ValueEditor = ({ keyName, value, onSave }: ValueEditorProps) => {
                 startIcon={<SaveIcon />}
                 onClick={handleSave}
                 size="small"
+                color="success"
               >
                 Save
               </Button>
             </>
           ) : (
-            <Button
-              variant="outlined"
-              startIcon={<EditIcon />}
-              onClick={() => setIsEditing(true)}
-              size="small"
-            >
-              Edit
-            </Button>
+            onDelete && (
+              <Button
+                variant="outlined"
+                startIcon={<DeleteIcon />}
+                onClick={onDelete}
+                size="small"
+                color="error"
+              >
+                Remove
+              </Button>
+            )
           )}
         </Box>
       </Box>
-
-      {isEditing && (
-        <Box mb={2}>
-          <TextField
-            label="TTL (seconds, -1 for no expiry)"
-            type="number"
-            value={ttl}
-            onChange={(e) => setTtl(parseInt(e.target.value))}
-            size="small"
-            sx={{ width: 200 }}
-          />
-        </Box>
-      )}
 
       <Box sx={{ flexGrow: 1, overflow: 'auto' }}>
         {renderEditor()}
