@@ -1,3 +1,9 @@
+## [1.9.0](https://github.com/ruanbarroso/redis-explorer/compare/v1.8.0...v1.9.0) (2025-10-23)
+
+### 🚀 Features
+
+* melhorias na UI do ValueEditor - editor sempre editável com botões Save/Cancel dinâmicos, layout reorganizado com Size/TTL/Remove, campo TTL simplificado com tooltip explicativo, quebra de linha no nome da chave, e size calculado dinamicamente ([b0abd0e](https://github.com/ruanbarroso/redis-explorer/commit/b0abd0e49d6bdbacffb862c3e59458eaefb88f30))
+
 ## [1.8.0](https://github.com/ruanbarroso/redis-explorer/compare/v1.7.0...v1.8.0) (2025-10-23)
 
 ### 🚀 Features
