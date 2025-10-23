@@ -26,6 +26,7 @@ import {
   DialogContent,
   DialogContentText,
   DialogActions,
+  LinearProgress,
 } from '@mui/material';
 import {
   Search as SearchIcon,
@@ -34,30 +35,38 @@ import {
   Edit as EditIcon,
   ViewList as ViewListIcon,
   AccountTree as TreeViewIcon,
-  ExpandMore as ExpandAllIcon,
-  UnfoldLess as CollapseAllIcon,
   ArrowBack as ArrowBackIcon,
+  GetApp as LoadAllIcon,
 } from '@mui/icons-material';
 import { useDispatch, useSelector } from 'react-redux';
 import { RootState, AppDispatch } from '@/store';
 import {
   fetchKeys,
+  fetchAllKeys,
   fetchValue,
   setSearchPattern,
   setSelectedKey,
   deleteKey,
+  setLoadingProgress,
+  resetLoadingProgress,
+  setKeys,
+  setTotalKeys,
 } from '@/store/slices/keysSlice';
 import ValueEditor from './ValueEditor';
 import TreeView from './TreeView';
 import TreeStats from './TreeStats';
 import SeparatorSelector from './SeparatorSelector';
 import { useTreeView } from '@/hooks/useTreeView';
+import { useLoadAllKeysWithProgress } from '@/hooks/useLoadAllKeysWithProgress';
+import { useLoadAllKeysWithPolling } from '@/hooks/useLoadAllKeysWithPolling';
+import { useSimplePolling } from '@/hooks/useSimplePolling';
+import LoadingProgressModal from './LoadingProgressModal';
 import { RedisDataType } from '@/types/redis';
 import { formatTTL } from '@/utils/timeFormatter';
 
 const KeysBrowser = () => {
   const dispatch = useDispatch<AppDispatch>();
-  const { keys, selectedKey, selectedValue, searchPattern, isLoading, error } = useSelector(
+  const { keys, selectedKey, selectedValue, searchPattern, isLoading, isLoadingValue, isLoadingAllKeys, totalKeys, error, loadingProgress } = useSelector(
     (state: RootState) => state.keys
   );
   const { activeConnection } = useSelector((state: RootState) => state.connection);
@@ -78,9 +87,13 @@ const KeysBrowser = () => {
     activeSeparator,
     expandedNodes: treeExpandedNodes,
     toggleExpand,
-    expandAll,
-    collapseAll
+    expandAllChildren,
+    collapseAllChildren
   } = useTreeView(keys);
+  
+  const { loadAllKeysWithProgress, cancelLoadAllKeys } = useLoadAllKeysWithProgress();
+  const { loadAllKeysWithPolling, cancelLoadAllKeys: cancelPolling } = useLoadAllKeysWithPolling();
+  const { loadAllKeysSimple, cancelSimple } = useSimplePolling();
 
   useEffect(() => {
     if (activeConnection) {
@@ -92,6 +105,34 @@ const KeysBrowser = () => {
     if (activeConnection) {
       dispatch(fetchKeys({ pattern: searchPattern, count: 1000 }));
     }
+  };
+
+  const handleLoadAllKeys = async () => {
+    if (activeConnection) {
+      console.log('🚀 Carregando todas as chaves...');
+      try {
+        // Use simple polling method
+        console.log('🔄 Usando método simples...');
+        const keys = await loadAllKeysSimple(searchPattern);
+        
+        // Update keys in Redux store
+        dispatch(setKeys(keys));
+        dispatch(setTotalKeys(keys.length));
+        
+      } catch (error) {
+        console.error('❌ Erro ao carregar chaves:', error);
+        if (error instanceof Error && !error.message.includes('cancelada')) {
+          dispatch(resetLoadingProgress());
+        }
+      }
+    }
+  };
+
+  const handleCancelLoading = () => {
+    console.log('🛑 Usuário solicitou cancelamento...');
+    
+    // Use simple cancellation
+    cancelSimple();
   };
 
   const handleSearch = () => {
@@ -110,11 +151,14 @@ const KeysBrowser = () => {
   };
 
   const handleKeyDelete = (keyName: string) => {
+    console.log('🔄 handleKeyDelete chamado para:', keyName);
+    console.log('🔄 Estado atual do deleteDialog:', deleteDialog);
     setDeleteDialog({
       open: true,
       keyName,
       type: 'single'
     });
+    console.log('✅ Modal de exclusão deve estar aberto agora');
   };
 
   const handleConfirmDelete = async () => {
@@ -158,7 +202,6 @@ const KeysBrowser = () => {
     return colors[type] || 'default';
   };
 
-
   const formatSize = (size: number) => {
     if (size < 1024) return `${size} B`;
     if (size < 1024 * 1024) return `${(size / 1024).toFixed(1)} KB`;
@@ -194,7 +237,10 @@ const KeysBrowser = () => {
             {selectedKey}
           </Typography>
           <IconButton 
-            onClick={() => handleKeyDelete(selectedKey)} 
+            onClick={() => {
+              console.log('🗑️ Botão excluir clicado na visualização de conteúdo para:', selectedKey);
+              handleKeyDelete(selectedKey);
+            }} 
             color="error"
             size="small"
           >
@@ -204,7 +250,7 @@ const KeysBrowser = () => {
 
         {/* Conteúdo da chave em tela cheia */}
         <Box sx={{ flexGrow: 1, minHeight: 0 }}>
-          {isLoading ? (
+          {isLoadingValue ? (
             <Box display="flex" justifyContent="center" alignItems="center" height="100%">
               <CircularProgress />
             </Box>
@@ -225,6 +271,45 @@ const KeysBrowser = () => {
             </Box>
           )}
         </Box>
+
+        {/* Modal de Confirmação de Delete - Sempre renderizado */}
+        <Dialog
+          open={deleteDialog.open}
+          onClose={() => setDeleteDialog({ open: false, type: 'single' })}
+          aria-labelledby="delete-dialog-title"
+          aria-describedby="delete-dialog-description"
+        >
+          <DialogTitle id="delete-dialog-title" sx={{ color: 'error.main' }}>
+            Confirmar Exclusão
+          </DialogTitle>
+          <DialogContent>
+            <DialogContentText id="delete-dialog-description">
+              {deleteDialog.type === 'single' && deleteDialog.keyName ? (
+                <>Tem certeza que deseja excluir a chave <strong>"{deleteDialog.keyName}"</strong>?</>
+              ) : deleteDialog.type === 'bulk' && deleteDialog.keyNames ? (
+                <>Tem certeza que deseja excluir <strong>{deleteDialog.keyNames.length} chave{deleteDialog.keyNames.length > 1 ? 's' : ''}</strong>?</>
+              ) : null}
+              <br /><br />
+              Esta ação não pode ser desfeita.
+            </DialogContentText>
+          </DialogContent>
+          <DialogActions>
+            <Button 
+              onClick={() => setDeleteDialog({ open: false, type: 'single' })}
+              color="inherit"
+            >
+              Cancelar
+            </Button>
+            <Button 
+              onClick={handleConfirmDelete}
+              color="error"
+              variant="contained"
+              autoFocus
+            >
+              Excluir
+            </Button>
+          </DialogActions>
+        </Dialog>
       </Box>
     );
   }
@@ -261,24 +346,20 @@ const KeysBrowser = () => {
                 </ToggleButton>
               </ToggleButtonGroup>
               
-              {viewMode === 'tree' && (
-                <>
-                  <Tooltip title="Expand All">
-                    <IconButton onClick={expandAll} size="small">
-                      <ExpandAllIcon />
-                    </IconButton>
-                  </Tooltip>
-                  <Tooltip title="Collapse All">
-                    <IconButton onClick={collapseAll} size="small">
-                      <CollapseAllIcon />
-                    </IconButton>
-                  </Tooltip>
-                </>
-              )}
-              
-              <IconButton onClick={handleRefresh} disabled={isLoading}>
-                <RefreshIcon />
-              </IconButton>
+              <Tooltip title="Refresh (1000 keys)">
+                <IconButton onClick={handleRefresh} disabled={isLoading || loadingProgress.isActive}>
+                  <RefreshIcon />
+                </IconButton>
+              </Tooltip>
+              <Tooltip title="Load All Keys">
+                <IconButton 
+                  onClick={handleLoadAllKeys} 
+                  disabled={isLoading || loadingProgress.isActive}
+                  color={totalKeys && loadingProgress.phase === 'complete' ? "success" : "default"}
+                >
+                  <LoadAllIcon />
+                </IconButton>
+              </Tooltip>
             </Box>
           </Box>
 
@@ -307,6 +388,8 @@ const KeysBrowser = () => {
                 customSeparator={customSeparator}
                 onSeparatorChange={setCustomSeparator}
               />
+
+
             </Box>
           )}
 
@@ -324,9 +407,9 @@ const KeysBrowser = () => {
             )}
           </Box>
 
-          <Box sx={{ flexGrow: 1, overflow: 'hidden', height: 0 }}>
-            {isLoading ? (
-              <Box display="flex" justifyContent="center" p={2}>
+          <Box sx={{ flexGrow: 1, minHeight: 0, overflow: 'hidden' }}>
+            {isLoading || isLoadingAllKeys ? (
+              <Box display="flex" justifyContent="center" alignItems="center" height="100%">
                 <CircularProgress />
               </Box>
             ) : viewMode === 'tree' ? (
@@ -338,6 +421,8 @@ const KeysBrowser = () => {
                 onBulkKeyDelete={handleBulkKeyDelete}
                 expandedNodes={treeExpandedNodes}
                 onToggleExpand={toggleExpand}
+                onExpandAllChildren={expandAllChildren}
+                onCollapseAllChildren={collapseAllChildren}
               />
             ) : (
               <List sx={{ height: '100%', overflow: 'auto' }}>
@@ -348,8 +433,6 @@ const KeysBrowser = () => {
                         divider
                         sx={{ 
                           cursor: 'pointer',
-                          borderRadius: 1,
-                          mb: 0.5,
                           '&:hover': {
                             backgroundColor: 'action.hover',
                           },
@@ -405,44 +488,56 @@ const KeysBrowser = () => {
             </CardContent>
           </Card>
 
-          {/* Modal de Confirmação de Delete */}
+          {/* Modal de Confirmação de Delete - Para visualização de navegação */}
           <Dialog
-      open={deleteDialog.open}
-      onClose={() => setDeleteDialog({ open: false, type: 'single' })}
-      aria-labelledby="delete-dialog-title"
-      aria-describedby="delete-dialog-description"
-    >
-      <DialogTitle id="delete-dialog-title" sx={{ color: 'error.main' }}>
-        Confirmar Exclusão
-      </DialogTitle>
-      <DialogContent>
-        <DialogContentText id="delete-dialog-description">
-          {deleteDialog.type === 'single' && deleteDialog.keyName ? (
-            <>Tem certeza que deseja excluir a chave <strong>"{deleteDialog.keyName}"</strong>?</>
-          ) : deleteDialog.type === 'bulk' && deleteDialog.keyNames ? (
-            <>Tem certeza que deseja excluir <strong>{deleteDialog.keyNames.length} chave{deleteDialog.keyNames.length > 1 ? 's' : ''}</strong>?</>
-          ) : null}
-          <br /><br />
-          Esta ação não pode ser desfeita.
-        </DialogContentText>
-      </DialogContent>
-      <DialogActions>
-        <Button 
-          onClick={() => setDeleteDialog({ open: false, type: 'single' })}
-          color="inherit"
-        >
-          Cancelar
-        </Button>
-        <Button 
-          onClick={handleConfirmDelete}
-          color="error"
-          variant="contained"
-          autoFocus
-        >
-          Excluir
-        </Button>
-          </DialogActions>
+            open={deleteDialog.open}
+            onClose={() => setDeleteDialog({ open: false, type: 'single' })}
+            aria-labelledby="delete-dialog-title"
+            aria-describedby="delete-dialog-description"
+          >
+            <DialogTitle id="delete-dialog-title" sx={{ color: 'error.main' }}>
+              Confirmar Exclusão
+            </DialogTitle>
+            <DialogContent>
+              <DialogContentText id="delete-dialog-description">
+                {deleteDialog.type === 'single' && deleteDialog.keyName ? (
+                  <>Tem certeza que deseja excluir a chave <strong>"{deleteDialog.keyName}"</strong>?</>
+                ) : deleteDialog.type === 'bulk' && deleteDialog.keyNames ? (
+                  <>Tem certeza que deseja excluir <strong>{deleteDialog.keyNames.length} chave{deleteDialog.keyNames.length > 1 ? 's' : ''}</strong>?</>
+                ) : null}
+                <br /><br />
+                Esta ação não pode ser desfeita.
+              </DialogContentText>
+            </DialogContent>
+            <DialogActions>
+              <Button 
+                onClick={() => setDeleteDialog({ open: false, type: 'single' })}
+                color="inherit"
+              >
+                Cancelar
+              </Button>
+              <Button 
+                onClick={handleConfirmDelete}
+                color="error"
+                variant="contained"
+                autoFocus
+              >
+                Excluir
+              </Button>
+            </DialogActions>
           </Dialog>
+
+          {/* Loading Progress Modal */}
+          <LoadingProgressModal
+            open={(loadingProgress.isActive && loadingProgress.phase !== 'cancelled') || loadingProgress.phase === 'complete'}
+            phase={loadingProgress.phase}
+            message={loadingProgress.message}
+            progress={loadingProgress.progress}
+            total={loadingProgress.total}
+            current={loadingProgress.current}
+            startTime={loadingProgress.startTime}
+            onCancel={loadingProgress.phase === 'complete' ? () => dispatch(resetLoadingProgress()) : handleCancelLoading}
+          />
     </Box>
   );
 };

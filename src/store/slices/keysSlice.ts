@@ -9,7 +9,19 @@ interface KeysState {
   searchPattern: string;
   isLoading: boolean;
   isLoadingValue: boolean;
+  isLoadingAllKeys: boolean;
+  totalKeys: number | null;
   error: string | null;
+  // Progress state
+  loadingProgress: {
+    isActive: boolean;
+    phase: 'starting' | 'scanning' | 'processing' | 'completing' | 'complete';
+    message: string;
+    progress: number;
+    total: number;
+    current: number;
+    startTime?: number;
+  };
 }
 
 const initialState: KeysState = {
@@ -19,13 +31,31 @@ const initialState: KeysState = {
   searchPattern: '*',
   isLoading: false,
   isLoadingValue: false,
+  isLoadingAllKeys: false,
+  totalKeys: null,
   error: null,
+  loadingProgress: {
+    isActive: false,
+    phase: 'starting',
+    message: '',
+    progress: 0,
+    total: 0,
+    current: 0,
+    startTime: undefined,
+  },
 };
 
 export const fetchKeys = createAsyncThunk(
   'keys/fetchKeys',
   async ({ pattern, count }: { pattern?: string; count?: number }) => {
     return await redisClientService.getKeys(pattern, count);
+  }
+);
+
+export const fetchAllKeys = createAsyncThunk(
+  'keys/fetchAllKeys',
+  async ({ pattern }: { pattern?: string }) => {
+    return await redisClientService.getAllKeys(pattern);
   }
 );
 
@@ -89,6 +119,42 @@ const keysSlice = createSlice({
     clearError: (state) => {
       state.error = null;
     },
+    setLoadingProgress: (state, action: PayloadAction<{
+      isActive: boolean;
+      phase?: 'starting' | 'scanning' | 'processing' | 'completing' | 'complete';
+      message?: string;
+      progress?: number;
+      total?: number;
+      current?: number;
+      startTime?: number;
+    }>) => {
+      state.loadingProgress = {
+        ...state.loadingProgress,
+        ...action.payload,
+      };
+      
+      // Set start time when starting
+      if (action.payload.phase === 'starting' && action.payload.isActive) {
+        state.loadingProgress.startTime = Date.now();
+      }
+    },
+    resetLoadingProgress: (state) => {
+      state.loadingProgress = {
+        isActive: false,
+        phase: 'starting',
+        message: '',
+        progress: 0,
+        total: 0,
+        current: 0,
+        startTime: undefined,
+      };
+    },
+    setKeys: (state, action: PayloadAction<RedisKey[]>) => {
+      state.keys = action.payload;
+    },
+    setTotalKeys: (state, action: PayloadAction<number>) => {
+      state.totalKeys = action.payload;
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -125,11 +191,24 @@ const keysSlice = createSlice({
           state.selectedKey = null;
           state.selectedValue = null;
         }
+      })
+      .addCase(fetchAllKeys.pending, (state) => {
+        state.isLoadingAllKeys = true;
+        state.error = null;
+      })
+      .addCase(fetchAllKeys.fulfilled, (state, action) => {
+        state.isLoadingAllKeys = false;
+        state.keys = action.payload;
+        state.totalKeys = action.payload.length;
+      })
+      .addCase(fetchAllKeys.rejected, (state, action) => {
+        state.isLoadingAllKeys = false;
+        state.error = action.error.message || 'Failed to fetch all keys';
       });
   },
 });
 
-export const { setSearchPattern, setSelectedKey, clearKeys, clearError } =
+export const { setSearchPattern, setSelectedKey, clearKeys, clearError, setLoadingProgress, resetLoadingProgress, setKeys, setTotalKeys } =
   keysSlice.actions;
 
 export default keysSlice.reducer;

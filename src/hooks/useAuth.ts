@@ -56,13 +56,34 @@ export const useAuth = () => {
 
   const logout = async () => {
     try {
-      await fetch('/api/auth/logout', { method: 'POST' });
+      console.log('🔄 Fazendo requisição para /api/auth/logout...');
+      const response = await fetch('/api/auth/logout', { method: 'POST' });
+      
+      if (!response.ok) {
+        throw new Error(`Logout failed: ${response.status} ${response.statusText}`);
+      }
+      
+      const data = await response.json();
+      console.log('📡 Resposta da API logout:', data);
+      
+      setAuthState(prev => {
+        const newState = {
+          ...prev,
+          isAuthenticated: false,
+        };
+        console.log('🔄 Atualizando estado de autenticação:', newState);
+        return newState;
+      });
+      
+      console.log('✅ Estado de autenticação atualizado para false');
+    } catch (error) {
+      console.error('❌ Error during logout:', error);
+      // Mesmo com erro na API, vamos desautenticar localmente
       setAuthState(prev => ({
         ...prev,
         isAuthenticated: false,
       }));
-    } catch (error) {
-      console.error('Error during logout:', error);
+      throw error; // Re-throw para que o caller possa tratar
     }
   };
 

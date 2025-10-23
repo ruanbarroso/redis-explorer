@@ -68,6 +68,27 @@ class RedisClientService {
     }
   }
 
+  async getAllKeys(pattern: string = '*'): Promise<RedisKey[]> {
+    try {
+      console.log('🚀 Iniciando carregamento de todas as chaves...');
+      const response = await fetch(
+        `${this.baseUrl}/keys?pattern=${encodeURIComponent(pattern)}&loadAll=true`,
+        { credentials: 'include' }
+      );
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch all keys');
+      }
+
+      const result = await response.json();
+      console.log(`✅ Carregamento concluído: ${result.total} chaves carregadas`);
+      return result.keys || [];
+    } catch (error) {
+      console.error('Error getting all keys:', error);
+      return [];
+    }
+  }
+
   async getValue(key: string): Promise<RedisValue | null> {
     try {
       const response = await fetch(

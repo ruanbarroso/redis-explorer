@@ -66,6 +66,15 @@ export default function Home() {
     closeChangePasswordDialog
   } = useAuthWithModals();
 
+  // Debug: Monitor authentication state changes
+  useEffect(() => {
+    console.log('🔍 Estado de autenticação mudou:', {
+      isAuthenticated,
+      isLoading,
+      hasPassword,
+      isHydrated
+    });
+  }, [isAuthenticated, isLoading, hasPassword, isHydrated]);
 
   // Effect to manage app state based on active connection
   useEffect(() => {
@@ -120,6 +129,7 @@ export default function Home() {
 
   // Se tem senha mas não está autenticado, mostra login
   if (!isAuthenticated) {
+    console.log('🔐 Usuário não autenticado, mostrando tela de login');
     return <LoginForm onLoginSuccess={refreshAuth} />;
   }
 

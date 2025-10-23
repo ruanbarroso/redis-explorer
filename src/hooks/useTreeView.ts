@@ -70,6 +70,90 @@ export function useTreeView(keys: RedisKey[], initialSeparator?: string) {
     setExpandedNodes(prev => new Set([...prev, ...nodesToExpand]));
   };
 
+  const expandAllChildren = (parentNodeId: string) => {
+    console.log('🌳 Expandindo todos os filhos de:', parentNodeId);
+    const childNodeIds = new Set<string>();
+    
+    const findAndCollectChildren = (nodes: TreeNode[], targetId: string): boolean => {
+      for (const node of nodes) {
+        if (node.id === targetId) {
+          // Encontrou o nó pai, agora coleta todos os filhos
+          const collectAllChildren = (childNodes: TreeNode[]) => {
+            childNodes.forEach(child => {
+              if (child.type === 'folder' && child.children) {
+                childNodeIds.add(child.id);
+                collectAllChildren(child.children);
+              }
+            });
+          };
+          
+          if (node.children) {
+            collectAllChildren(node.children);
+          }
+          return true;
+        }
+        
+        if (node.children && findAndCollectChildren(node.children, targetId)) {
+          return true;
+        }
+      }
+      return false;
+    };
+    
+    findAndCollectChildren(treeNodes, parentNodeId);
+    
+    // Adiciona o próprio nó pai à lista de nós para expandir
+    childNodeIds.add(parentNodeId);
+    
+    console.log('✅ Nós encontrados para expandir (incluindo pai):', Array.from(childNodeIds));
+    // Adiciona os novos nós expandidos aos já existentes
+    setExpandedNodes(prev => new Set([...prev, ...childNodeIds]));
+  };
+
+  const collapseAllChildren = (parentNodeId: string) => {
+    console.log('🌳 Colapsando todos os filhos de:', parentNodeId);
+    const childNodeIds = new Set<string>();
+    
+    const findAndCollectChildren = (nodes: TreeNode[], targetId: string): boolean => {
+      for (const node of nodes) {
+        if (node.id === targetId) {
+          // Encontrou o nó pai, agora coleta todos os filhos
+          const collectAllChildren = (childNodes: TreeNode[]) => {
+            childNodes.forEach(child => {
+              if (child.type === 'folder' && child.children) {
+                childNodeIds.add(child.id);
+                collectAllChildren(child.children);
+              }
+            });
+          };
+          
+          if (node.children) {
+            collectAllChildren(node.children);
+          }
+          return true;
+        }
+        
+        if (node.children && findAndCollectChildren(node.children, targetId)) {
+          return true;
+        }
+      }
+      return false;
+    };
+    
+    findAndCollectChildren(treeNodes, parentNodeId);
+    
+    // Adiciona o próprio nó pai à lista de nós para colapsar
+    childNodeIds.add(parentNodeId);
+    
+    console.log('✅ Nós encontrados para colapsar (incluindo pai):', Array.from(childNodeIds));
+    // Remove os nós filhos dos expandidos
+    setExpandedNodes(prev => {
+      const newSet = new Set(prev);
+      childNodeIds.forEach(id => newSet.delete(id));
+      return newSet;
+    });
+  };
+
   return {
     treeNodes,
     expandedNodes,
@@ -83,5 +167,7 @@ export function useTreeView(keys: RedisKey[], initialSeparator?: string) {
     expandAll,
     collapseAll,
     expandToKey,
+    expandAllChildren,
+    collapseAllChildren,
   };
 }

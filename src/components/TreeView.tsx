@@ -28,11 +28,15 @@ import {
   FolderOpen as FolderOpenIcon,
   Delete as DeleteIcon,
   Storage as StorageIcon,
+  UnfoldMore as ExpandAllChildrenIcon,
+  UnfoldLess as CollapseAllChildrenIcon,
 } from '@mui/icons-material';
 import { TreeNode } from '@/types/tree';
 import { RedisDataType } from '@/types/redis';
 import { formatTTL } from '@/utils/timeFormatter';
 import KeyTypeIcon from './KeyTypeIcon';
+import { useDispatch } from 'react-redux';
+import { deleteKey } from '@/store/slices/keysSlice';
 
 interface TreeViewProps {
   nodes: TreeNode[];
@@ -42,6 +46,8 @@ interface TreeViewProps {
   onBulkKeyDelete?: (keys: string[]) => void;
   expandedNodes: Set<string>;
   onToggleExpand: (nodeId: string) => void;
+  onExpandAllChildren?: (nodeId: string) => void;
+  onCollapseAllChildren?: (nodeId: string) => void;
 }
 
 const TreeView = ({
@@ -52,7 +58,10 @@ const TreeView = ({
   onBulkKeyDelete,
   expandedNodes,
   onToggleExpand,
+  onExpandAllChildren,
+  onCollapseAllChildren,
 }: TreeViewProps) => {
+  const dispatch = useDispatch();
   const [deleteDialog, setDeleteDialog] = useState<{
     open: boolean;
     folderName?: string;
@@ -81,16 +90,19 @@ const TreeView = ({
     });
   };
 
-  const handleConfirmDelete = () => {
+  const handleConfirmDelete = async () => {
     if (deleteDialog.keysToDelete && deleteDialog.keyCount && deleteDialog.keyCount > 0) {
-      if (onBulkKeyDelete && deleteDialog.keyCount > 1) {
-        // Use bulk delete for better performance
-        onBulkKeyDelete(deleteDialog.keysToDelete);
-      } else {
-        // Fallback to individual deletes
-        deleteDialog.keysToDelete.forEach(keyPath => {
-          onKeyDelete(keyPath);
-        });
+      try {
+        console.log(`🗑️ Excluindo ${deleteDialog.keyCount} chave(s) da pasta "${deleteDialog.folderName}"`);
+        
+        // Executar exclusão diretamente usando Redux, sem passar pelo KeysBrowser
+        await Promise.all(deleteDialog.keysToDelete.map(keyPath => 
+          dispatch(deleteKey(keyPath))
+        ));
+        
+        console.log(`✅ ${deleteDialog.keyCount} chave(s) excluída(s) com sucesso`);
+      } catch (error) {
+        console.error('❌ Erro ao excluir chaves da pasta:', error);
       }
     }
     setDeleteDialog({ open: false });
@@ -236,23 +248,56 @@ const TreeView = ({
           />
 
           <ListItemSecondaryAction>
-            <Tooltip title={node.type === 'key' ? 'Delete key' : 'Delete all keys in folder'}>
-              <IconButton
-                size="small"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  if (node.type === 'key') {
-                    onKeyDelete(node.fullPath);
-                  } else {
-                    // Para pastas, deletar todas as chaves dentro
-                    handleFolderDelete(node);
-                  }
-                }}
-                color="error"
-              >
-                <DeleteIcon fontSize="small" />
-              </IconButton>
-            </Tooltip>
+            <Box display="flex" alignItems="center" gap={0.5}>
+              {/* Botões de Expand/Collapse Children para pastas */}
+              {node.type === 'folder' && hasChildren && onExpandAllChildren && onCollapseAllChildren && (
+                <>
+                  <Tooltip title="Expand All Children">
+                    <IconButton
+                      size="small"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onExpandAllChildren(node.id);
+                      }}
+                      color="primary"
+                    >
+                      <ExpandAllChildrenIcon fontSize="small" />
+                    </IconButton>
+                  </Tooltip>
+                  <Tooltip title="Collapse All Children">
+                    <IconButton
+                      size="small"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onCollapseAllChildren(node.id);
+                      }}
+                      color="primary"
+                    >
+                      <CollapseAllChildrenIcon fontSize="small" />
+                    </IconButton>
+                  </Tooltip>
+                </>
+              )}
+              
+              {/* Botão de Delete */}
+              <Tooltip title={node.type === 'key' ? 'Delete key' : 'Delete all keys in folder'}>
+                <IconButton
+                  size="small"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (node.type === 'key') {
+                      onKeyDelete(node.fullPath);
+                    } else {
+                      // Para pastas, deletar todas as chaves dentro
+                      handleFolderDelete(node);
+                    }
+                  }}
+                  color="error"
+                >
+                  <DeleteIcon fontSize="small" />
+                </IconButton>
+              </Tooltip>
+            </Box>
           </ListItemSecondaryAction>
         </ListItem>
 

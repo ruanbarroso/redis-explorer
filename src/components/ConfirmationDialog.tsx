@@ -120,7 +120,10 @@ const ConfirmationDialog = ({
           {cancelText}
         </Button>
         <Button 
-          onClick={onConfirm}
+          onClick={() => {
+            console.log('🔘 Botão de confirmação clicado:', confirmText);
+            onConfirm();
+          }}
           variant="contained"
           color={getButtonColor()}
           startIcon={icon}

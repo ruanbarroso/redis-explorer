@@ -103,8 +103,24 @@ class RedisService {
     if (!redis) return [];
 
     try {
-      const keys = await redis.keys(pattern);
-      const limitedKeys = keys.slice(0, count);
+      // Use SCAN instead of KEYS for better performance with large datasets
+      const allKeys: string[] = [];
+      let cursor = '0';
+      
+      do {
+        const result = await redis.scan(cursor, 'MATCH', pattern, 'COUNT', Math.min(count * 2, 1000));
+        cursor = result[0];
+        const keys = result[1];
+        allKeys.push(...keys);
+        
+        // If we have enough keys or cursor is back to 0, stop
+        if (allKeys.length >= count || cursor === '0') {
+          break;
+        }
+      } while (cursor !== '0');
+      
+      // Limit to requested count
+      const limitedKeys = allKeys.slice(0, count);
       
       const keyDetails = await Promise.all(
         limitedKeys.map(async (key) => {
@@ -126,6 +142,66 @@ class RedisService {
       return keyDetails;
     } catch (error) {
       console.error('Error getting keys:', error);
+      return [];
+    }
+  }
+
+  async getAllKeys(pattern: string = '*'): Promise<RedisKey[]> {
+    console.log('🚀 getAllKeys chamado com padrão:', pattern);
+    
+    try {
+      // For now, just use the existing getKeys method but without limit
+      console.log('🔄 Usando método KEYS para buscar todas as chaves...');
+      const redis = this.getActiveConnection();
+      if (!redis) {
+        console.log('❌ Nenhuma conexão ativa encontrada');
+        return [];
+      }
+
+      const allKeys = await redis.keys(pattern);
+      console.log(`✅ Encontradas ${allKeys.length} chaves`);
+      
+      // Process in smaller batches for better performance
+      const keyDetails: RedisKey[] = [];
+      const batchSize = 100;
+      
+      for (let i = 0; i < allKeys.length; i += batchSize) {
+        const batch = allKeys.slice(i, i + batchSize);
+        console.log(`🔄 Processando lote ${Math.floor(i/batchSize) + 1}/${Math.ceil(allKeys.length/batchSize)}`);
+        
+        const batchDetails = await Promise.all(
+          batch.map(async (key) => {
+            try {
+              const [type, ttl, size] = await Promise.all([
+                redis.type(key),
+                redis.ttl(key),
+                this.getKeySize(key),
+              ]);
+
+              return {
+                name: key,
+                type: type as RedisDataType,
+                ttl,
+                size,
+              };
+            } catch (error) {
+              return {
+                name: key,
+                type: 'string' as RedisDataType,
+                ttl: -1,
+                size: 0,
+              };
+            }
+          })
+        );
+        
+        keyDetails.push(...batchDetails);
+      }
+
+      console.log(`🎉 Processamento concluído: ${keyDetails.length} chaves`);
+      return keyDetails;
+    } catch (error) {
+      console.error('❌ Error getting all keys:', error);
       return [];
     }
   }
