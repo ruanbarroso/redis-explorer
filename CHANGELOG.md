@@ -1,3 +1,9 @@
+## [1.9.1](https://github.com/ruanbarroso/redis-explorer/compare/v1.9.0...v1.9.1) (2025-10-23)
+
+### 🐛 Bug Fixes
+
+* corrige funcionalidade load all keys e melhora UX ([20194ef](https://github.com/ruanbarroso/redis-explorer/commit/20194ef3d3bbd76ed4b5e9fb74dd345556d7bbb2))
+
 ## [1.9.0](https://github.com/ruanbarroso/redis-explorer/compare/v1.8.0...v1.9.0) (2025-10-23)
 
 ### 🚀 Features
