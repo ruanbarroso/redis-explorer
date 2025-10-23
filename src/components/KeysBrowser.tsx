@@ -61,6 +61,7 @@ import { useLoadAllKeysWithProgress } from '@/hooks/useLoadAllKeysWithProgress';
 import { useLoadAllKeysWithPolling } from '@/hooks/useLoadAllKeysWithPolling';
 import { useSimplePolling } from '@/hooks/useSimplePolling';
 import LoadingProgressModal from './LoadingProgressModal';
+import VirtualizedKeysList from './VirtualizedKeysList';
 import { RedisDataType } from '@/types/redis';
 import { formatTTL } from '@/utils/timeFormatter';
 
@@ -425,65 +426,14 @@ const KeysBrowser = () => {
                 onCollapseAllChildren={collapseAllChildren}
               />
             ) : (
-              <List sx={{ height: '100%', overflow: 'auto' }}>
-                {keys.map((key) => (
-                  <ListItem
-                        key={key.name}
-                        onClick={() => handleKeySelect(key.name)}
-                        divider
-                        sx={{ 
-                          cursor: 'pointer',
-                          '&:hover': {
-                            backgroundColor: 'action.hover',
-                          },
-                        }}
-                      >
-                        <ListItemText
-                          primary={
-                            <Box display="flex" alignItems="center" gap={1}>
-                              <Typography
-                                variant="body2"
-                                sx={{
-                                  fontFamily: 'monospace',
-                                  wordBreak: 'break-all',
-                                }}
-                              >
-                                {key.name}
-                              </Typography>
-                              <Chip
-                                label={key.type}
-                                size="small"
-                                color={getTypeColor(key.type)}
-                              />
-                            </Box>
-                          }
-                          secondary={
-                            <span style={{ display: 'flex', justifyContent: 'space-between', marginTop: '4px' }}>
-                              <Typography variant="caption" component="span">
-                                Size: {formatSize(key.size)}
-                              </Typography>
-                              <Typography variant="caption" component="span">
-                                TTL: {formatTTL(key.ttl)}
-                              </Typography>
-                            </span>
-                          }
-                        />
-                        <ListItemSecondaryAction>
-                          <IconButton
-                            size="small"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleKeyDelete(key.name);
-                            }}
-                            color="error"
-                          >
-                            <DeleteIcon fontSize="small" />
-                          </IconButton>
-                        </ListItemSecondaryAction>
-                      </ListItem>
-                    ))}
-                  </List>
-                )}
+              <VirtualizedKeysList
+                keys={keys}
+                selectedKey={selectedKey}
+                onKeySelect={handleKeySelect}
+                onKeyDelete={handleKeyDelete}
+                height={600} // Fixed height for virtualization
+              />
+            )}
               </Box>
             </CardContent>
           </Card>
