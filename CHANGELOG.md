@@ -1,3 +1,9 @@
+## [1.10.0](https://github.com/ruanbarroso/redis-explorer/compare/v1.9.1...v1.10.0) (2025-10-23)
+
+### 🚀 Features
+
+* add 'Go to Key' button and support for creating new keys ([4c6eea4](https://github.com/ruanbarroso/redis-explorer/commit/4c6eea4f00a27f9e0eaba7b6ed16f51e2446cd81))
+
 ## [1.9.1](https://github.com/ruanbarroso/redis-explorer/compare/v1.9.0...v1.9.1) (2025-10-23)
 
 ### 🐛 Bug Fixes
