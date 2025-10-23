@@ -52,13 +52,15 @@ interface ValueEditorProps {
 
 const ValueEditor = ({ keyName, value, onSave, onDelete }: ValueEditorProps) => {
   const dispatch = useDispatch<AppDispatch>();
-  const [editedValue, setEditedValue] = useState<any>(value.value);
+  // Detectar se é uma chave nova (não existe)
+  const isNewKey = value.value === null && value.type === 'none';
+  const [editedValue, setEditedValue] = useState<any>(isNewKey ? '' : value.value);
   const [ttl, setTtl] = useState<number>(value.ttl > 0 ? value.ttl : -1);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [newField, setNewField] = useState({ key: '', value: '' });
   const [error, setError] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<'raw' | 'json'>('json');
-  const [hasChanges, setHasChanges] = useState(false);
+  const [hasChanges, setHasChanges] = useState(isNewKey);
 
   const calculateSize = () => {
     if (editedValue === null || editedValue === undefined) return 0;
@@ -67,9 +69,10 @@ const ValueEditor = ({ keyName, value, onSave, onDelete }: ValueEditorProps) => 
   };
 
   useEffect(() => {
-    setEditedValue(value.value);
+    const isNew = value.value === null && value.type === 'none';
+    setEditedValue(isNew ? '' : value.value);
     setTtl(value.ttl > 0 ? value.ttl : -1);
-    setHasChanges(false);
+    setHasChanges(isNew);
     setError(null);
   }, [value]);
 
@@ -81,11 +84,13 @@ const ValueEditor = ({ keyName, value, onSave, onDelete }: ValueEditorProps) => 
 
   const handleSave = async () => {
     try {
+      // Se for chave nova, salvar como string
+      const typeToSave = isNewKey ? 'string' : value.type;
       await dispatch(
         updateValue({
           key: keyName,
           value: editedValue,
-          type: value.type,
+          type: typeToSave,
           ttl: ttl > 0 ? ttl : undefined,
         })
       ).unwrap();
@@ -570,6 +575,11 @@ const ValueEditor = ({ keyName, value, onSave, onDelete }: ValueEditorProps) => 
   };
 
   const renderEditor = () => {
+    // Se for chave nova, renderizar como string editor
+    if (isNewKey) {
+      return renderStringEditor();
+    }
+    
     switch (value.type) {
       case 'string':
         return renderStringEditor();
@@ -599,14 +609,17 @@ const ValueEditor = ({ keyName, value, onSave, onDelete }: ValueEditorProps) => 
         <Box display="flex" gap={1}>
           {hasChanges ? (
             <>
-              <Button 
-                onClick={handleCancel} 
-                size="small"
-                variant="outlined"
-                color="warning"
-              >
-                Cancel
-              </Button>
+              {/* Não mostrar botão Cancel se for chave nova */}
+              {!isNewKey && (
+                <Button 
+                  onClick={handleCancel} 
+                  size="small"
+                  variant="outlined"
+                  color="warning"
+                >
+                  Cancel
+                </Button>
+              )}
               <Button
                 variant="contained"
                 startIcon={<SaveIcon />}
@@ -618,7 +631,8 @@ const ValueEditor = ({ keyName, value, onSave, onDelete }: ValueEditorProps) => 
               </Button>
             </>
           ) : (
-            onDelete && (
+            /* Não mostrar botão Delete se for chave nova */
+            !isNewKey && onDelete && (
               <Button
                 variant="outlined"
                 startIcon={<DeleteIcon />}

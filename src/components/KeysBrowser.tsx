@@ -37,6 +37,7 @@ import {
   AccountTree as TreeViewIcon,
   ArrowBack as ArrowBackIcon,
   GetApp as LoadAllIcon,
+  Key as KeyIcon,
 } from '@mui/icons-material';
 import { useDispatch, useSelector } from 'react-redux';
 import { RootState, AppDispatch } from '@/store';
@@ -82,6 +83,10 @@ const KeysBrowser = () => {
     keyNames?: string[];
     type: 'single' | 'bulk';
   }>({ open: false, type: 'single' });
+  const [goToKeyDialog, setGoToKeyDialog] = useState<{
+    open: boolean;
+    keyName: string;
+  }>({ open: false, keyName: '' });
   const {
     treeNodes,
     detectedSeparator,
@@ -168,6 +173,18 @@ const KeysBrowser = () => {
 
   const handleBackToNavigation = () => {
     setCurrentView('navigation');
+  };
+
+  const handleGoToKey = () => {
+    setGoToKeyDialog({ open: true, keyName: '' });
+  };
+
+  const handleConfirmGoToKey = () => {
+    const keyName = goToKeyDialog.keyName.trim();
+    if (keyName) {
+      handleKeySelect(keyName);
+      setGoToKeyDialog({ open: false, keyName: '' });
+    }
   };
 
   const handleKeyDelete = (keyName: string) => {
@@ -382,6 +399,14 @@ const KeysBrowser = () => {
                   <LoadAllIcon />
                 </IconButton>
               </Tooltip>
+              <Tooltip title="Go to Key">
+                <IconButton 
+                  onClick={handleGoToKey} 
+                  disabled={isLoading || loadingProgress.isActive}
+                >
+                  <KeyIcon />
+                </IconButton>
+              </Tooltip>
             </Box>
           </Box>
 
@@ -517,6 +542,54 @@ const KeysBrowser = () => {
             details={errorModal.details}
             onClose={closeErrorModal}
           />
+
+          {/* Go to Key Modal */}
+          <Dialog
+            open={goToKeyDialog.open}
+            onClose={() => setGoToKeyDialog({ open: false, keyName: '' })}
+            aria-labelledby="go-to-key-dialog-title"
+            maxWidth="sm"
+            fullWidth
+          >
+            <DialogTitle id="go-to-key-dialog-title">
+              Acessar Chave Específica
+            </DialogTitle>
+            <DialogContent>
+              <DialogContentText sx={{ mb: 2 }}>
+                Digite o nome exato da chave que deseja visualizar:
+              </DialogContentText>
+              <TextField
+                autoFocus
+                fullWidth
+                label="Nome da Chave"
+                placeholder="ex: user:123"
+                value={goToKeyDialog.keyName}
+                onChange={(e) => setGoToKeyDialog({ ...goToKeyDialog, keyName: e.target.value })}
+                onKeyPress={(e) => {
+                  if (e.key === 'Enter') {
+                    handleConfirmGoToKey();
+                  }
+                }}
+                sx={{ mt: 1 }}
+              />
+            </DialogContent>
+            <DialogActions>
+              <Button 
+                onClick={() => setGoToKeyDialog({ open: false, keyName: '' })}
+                color="inherit"
+              >
+                Cancelar
+              </Button>
+              <Button 
+                onClick={handleConfirmGoToKey}
+                color="primary"
+                variant="contained"
+                disabled={!goToKeyDialog.keyName.trim()}
+              >
+                Abrir
+              </Button>
+            </DialogActions>
+          </Dialog>
     </Box>
   );
 };
