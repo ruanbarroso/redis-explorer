@@ -141,23 +141,26 @@ const ValueEditor = ({ keyName, value, onSave, onDelete }: ValueEditorProps) => 
       <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
         <Box display="flex" justifyContent="space-between" alignItems="center" mb={1}>
           <Box display="flex" gap={1} alignItems="center">
-            <ToggleButtonGroup
-              value={viewMode}
-              exclusive
-              onChange={(_, newMode) => newMode && setViewMode(newMode)}
-              size="small"
-            >
-              <ToggleButton value="json">
-                <Tooltip title="JSON Format">
-                  <CodeIcon />
-                </Tooltip>
-              </ToggleButton>
-              <ToggleButton value="raw">
-                <Tooltip title="Raw Text">
-                  <TextIcon />
-                </Tooltip>
-              </ToggleButton>
-            </ToggleButtonGroup>
+            {/* Só mostra os botões de alternância se o conteúdo for JSON válido */}
+            {jsonResult.isJson && (
+              <ToggleButtonGroup
+                value={viewMode}
+                exclusive
+                onChange={(_, newMode) => newMode && setViewMode(newMode)}
+                size="small"
+              >
+                <ToggleButton value="json">
+                  <Tooltip title="JSON Format">
+                    <CodeIcon />
+                  </Tooltip>
+                </ToggleButton>
+                <ToggleButton value="raw">
+                  <Tooltip title="Raw Text">
+                    <TextIcon />
+                  </Tooltip>
+                </ToggleButton>
+              </ToggleButtonGroup>
+            )}
             
             {jsonResult.isJson && (
               <Box display="flex" gap={1}>
@@ -178,7 +181,7 @@ const ValueEditor = ({ keyName, value, onSave, onDelete }: ValueEditorProps) => 
               </Box>
             )}
             
-            {!jsonResult.isJson && viewMode === 'json' && (
+            {!jsonResult.isJson && (
               <Chip label="Plain Text" size="small" color="default" />
             )}
           </Box>

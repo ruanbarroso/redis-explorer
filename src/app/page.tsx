@@ -27,6 +27,7 @@ import { useSelector } from 'react-redux';
 import { RootState } from '@/store';
 import { useAuthWithModals } from '@/hooks/useAuthWithModals';
 import { useCrossTabSync } from '@/hooks/useCrossTabSync';
+import { useIsClient } from '@/hooks/useIsClient';
 import LoadingScreen from '@/components/LoadingScreen';
 import PasswordSetup from '@/components/PasswordSetup';
 import LoginForm from '@/components/LoginForm';
@@ -46,6 +47,7 @@ type AppState = 'connection-selection' | 'main-app';
 
 export default function Home() {
   const theme = useTheme();
+  const isClient = useIsClient();
   const [activeTab, setActiveTab] = useState<TabType>('dashboard');
   const [appState, setAppState] = useState<AppState>('connection-selection');
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -121,8 +123,8 @@ export default function Home() {
     { id: 'terminal', label: 'CLI', icon: <TerminalIcon /> },
   ];
 
-  // Mostra loading até que a autenticação seja verificada
-  if (!isHydrated || isLoading) {
+  // Mostra loading até que o cliente esteja pronto e a autenticação seja verificada
+  if (!isClient || !isHydrated || isLoading) {
     return <LoadingScreen />;
   }
 

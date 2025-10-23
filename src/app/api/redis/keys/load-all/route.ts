@@ -12,8 +12,14 @@ export async function POST(request: NextRequest) {
 
     console.log(`🚀 Iniciando carregamento com operationId: ${operationId}`);
 
+    // Get sessionId from request
+    const sessionId = await getSessionId();
+    if (!sessionId) {
+      return NextResponse.json({ error: 'No active session' }, { status: 401 });
+    }
+
     // Start the operation in background
-    processKeysInBackground(pattern, operationId);
+    processKeysInBackground(pattern, operationId, sessionId);
     
     return NextResponse.json({ 
       success: true, 
@@ -40,7 +46,7 @@ function getOperationStatus() {
   return new Map();
 }
 
-async function processKeysInBackground(pattern: string, operationId: string) {
+async function processKeysInBackground(pattern: string, operationId: string, sessionId: string) {
   try {
     // Update status: starting
     await updateOperationStatus(operationId, {
@@ -58,10 +64,10 @@ async function processKeysInBackground(pattern: string, operationId: string) {
       return;
     }
 
-    // Get Redis connection
-    const redis = (redisService as any).getActiveConnection();
+    // Get Redis connection from session
+    const redis = sessionManager.getRedis(sessionId);
     if (!redis) {
-      throw new Error('No active Redis connection');
+      throw new Error('No active Redis connection for this session');
     }
 
     // Update status: scanning
