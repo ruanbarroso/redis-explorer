@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import {
   Box,
   Grid,
@@ -60,6 +60,8 @@ import { useTreeView } from '@/hooks/useTreeView';
 import { useLoadAllKeysWithProgress } from '@/hooks/useLoadAllKeysWithProgress';
 import { useLoadAllKeysWithPolling } from '@/hooks/useLoadAllKeysWithPolling';
 import { useSimplePolling } from '@/hooks/useSimplePolling';
+import { useConnectionErrorHandler } from '@/hooks/useConnectionErrorHandler';
+import ErrorModal from './ErrorModal';
 import LoadingProgressModal from './LoadingProgressModal';
 import VirtualizedKeysList from './VirtualizedKeysList';
 import { RedisDataType } from '@/types/redis';
@@ -95,12 +97,29 @@ const KeysBrowser = () => {
   const { loadAllKeysWithProgress, cancelLoadAllKeys } = useLoadAllKeysWithProgress();
   const { loadAllKeysWithPolling, cancelLoadAllKeys: cancelPolling } = useLoadAllKeysWithPolling();
   const { loadAllKeysSimple, cancelSimple } = useSimplePolling();
+  const { handleFetchError, errorModal, closeErrorModal } = useConnectionErrorHandler();
+  
+  // Ref para evitar chamadas duplicadas
+  const lastConnectionIdRef = useRef<string | null>(null);
+  const isInitialLoadRef = useRef(true);
 
   useEffect(() => {
-    if (activeConnection) {
-      handleRefresh();
+    // Evitar chamada na montagem inicial se não há conexão
+    if (!activeConnection?.connected) {
+      isInitialLoadRef.current = false;
+      return;
     }
-  }, [activeConnection]);
+    
+    // Evitar chamada duplicada para a mesma conexão
+    if (lastConnectionIdRef.current === activeConnection.id) {
+      return;
+    }
+    
+    lastConnectionIdRef.current = activeConnection.id;
+    isInitialLoadRef.current = false;
+    
+    handleRefresh();
+  }, [activeConnection?.id, activeConnection?.connected]);
 
   const handleRefresh = () => {
     if (activeConnection) {
@@ -487,6 +506,14 @@ const KeysBrowser = () => {
             current={loadingProgress.current}
             startTime={loadingProgress.startTime}
             onCancel={loadingProgress.phase === 'complete' ? () => dispatch(resetLoadingProgress()) : handleCancelLoading}
+          />
+
+          {/* Error Modal */}
+          <ErrorModal
+            open={errorModal.open}
+            message={errorModal.message}
+            details={errorModal.details}
+            onClose={closeErrorModal}
           />
     </Box>
   );

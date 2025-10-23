@@ -28,7 +28,7 @@ class ServerConnectionClient {
       }
     } catch (error) {
       console.error('Error loading connections:', error);
-      return [];
+      throw error; // Lançar erro ao invés de retornar array vazio
     }
   }
 

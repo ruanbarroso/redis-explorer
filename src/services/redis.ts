@@ -1,4 +1,5 @@
 import Redis from 'ioredis';
+import os from 'os';
 import {
   RedisConnection,
   RedisKey,
@@ -14,6 +15,9 @@ import {
 class RedisService {
   private connections: Map<string, Redis> = new Map();
   private activeConnection: string | null = null;
+  // Históricos estáticos para sobreviver entre chamadas
+  private static cpuHistory: { timestamp: number; cpuSys: number; cpuUser: number }[] = [];
+  private static pingHistory: { timestamp: number; ms: number }[] = [];
 
   constructor() {
     console.log('RedisService: New instance created');
@@ -360,6 +364,9 @@ class RedisService {
         console.log('Server uptime:', info.server?.uptime_in_seconds);
       }
 
+      // Medir latência real-time via PING
+      const pingMs = await this.measurePingLatency();
+
       // Parse command statistics
       const commandStats: RedisCommandStat[] = [];
       const totalCalls = parseInt(info.stats?.total_commands_processed || '0');
@@ -537,11 +544,89 @@ class RedisService {
         
         // Database Breakdown
         databases,
+        
+        // Real-time CPU calculation
+        instantaneousCpuPercent: await this.calculateInstantaneousCpu(info),
+        
+        // Client RTT (latency) percentis a partir do histórico de ping
+        clientRttP50: this.percentileFromPingHistory(50),
+        clientRttP95: this.percentileFromPingHistory(95),
       };
     } catch (error) {
       console.error('Error getting stats:', error);
       return null;
     }
+  }
+  
+  private async calculateInstantaneousCpu(info: RedisInfo): Promise<number> {
+    const currentCpuSys = parseFloat(info.cpu?.used_cpu_sys || '0');
+    const currentCpuUser = parseFloat(info.cpu?.used_cpu_user || '0');
+    const currentTotalCpu = currentCpuSys + currentCpuUser;
+    const currentTimestamp = Date.now();
+
+    // Empilha no histórico estático e mantém janela curta (20s) para refletir o estado atual
+    RedisService.cpuHistory.push({ timestamp: currentTimestamp, cpuSys: currentCpuSys, cpuUser: currentCpuUser });
+    const cpuWindow = 20_000;
+    RedisService.cpuHistory = RedisService.cpuHistory.filter(h => currentTimestamp - h.timestamp <= cpuWindow);
+
+    if (RedisService.cpuHistory.length < 2) return 0;
+
+    // Preferir medição entre 2s e 4s; caso contrário usa a mais recente entre 1s e 5s
+    let bestMeasurement: { timestamp: number; cpuSys: number; cpuUser: number } | null = null;
+    let bestTimeDiff = 0;
+    for (let i = RedisService.cpuHistory.length - 2; i >= 0; i--) {
+      const timeDiff = (currentTimestamp - RedisService.cpuHistory[i].timestamp) / 1000;
+      if (timeDiff >= 2 && timeDiff <= 4) { bestMeasurement = RedisService.cpuHistory[i]; bestTimeDiff = timeDiff; break; }
+    }
+    if (!bestMeasurement) {
+      const oldest = RedisService.cpuHistory[0];
+      const td = (currentTimestamp - oldest.timestamp) / 1000;
+      if (td >= 1 && td <= 5) { bestMeasurement = oldest; bestTimeDiff = td; }
+    }
+    if (!bestMeasurement || bestTimeDiff === 0) return 0;
+
+    const previousTotalCpu = bestMeasurement.cpuSys + bestMeasurement.cpuUser;
+    const cpuDiff = currentTotalCpu - previousTotalCpu;
+    const cpuRate = cpuDiff / bestTimeDiff; // núcleos (1.0 == 1 core cheio)
+    const cores = Math.max(1, os.cpus()?.length || 1);
+    const cpuPercent = (cpuRate / cores) * 100; // normalizado 0..100%
+    if (!Number.isFinite(cpuPercent) || cpuPercent < 0) return 0;
+    return Math.min(Math.max(cpuPercent, 0), 100);
+  }
+
+  // Mede latência real usando PING e atualiza histórico
+  private async measurePingLatency(): Promise<number | null> {
+    const redis = this.getActiveConnection();
+    if (!redis) return null;
+    try {
+      const start = process.hrtime.bigint();
+      await redis.ping();
+      const end = process.hrtime.bigint();
+      const ms = Number(end - start) / 1e6;
+      const now = Date.now();
+      RedisService.pingHistory.push({ timestamp: now, ms });
+      const oneMinute = 60_000;
+      RedisService.pingHistory = RedisService.pingHistory.filter(p => now - p.timestamp <= oneMinute);
+      return ms;
+    } catch {
+      return null;
+    }
+  }
+
+  // Calcula percentil do histórico de PING (últimos 20s)
+  private percentileFromPingHistory(q: number): number | null {
+    const now = Date.now();
+    const windowMs = 20_000;
+    const samples = RedisService.pingHistory.filter(p => now - p.timestamp <= windowMs).map(p => p.ms);
+    if (samples.length === 0) return null;
+    if (samples.length < 3) {
+      // Com poucos pontos, retorna média simples como aproximação
+      const avg = samples.reduce((a, b) => a + b, 0) / samples.length;
+      return avg;
+    }
+    samples.sort((a, b) => a - b);
+    const idx = Math.floor((q / 100) * (samples.length - 1));
+    return samples[Math.max(0, Math.min(samples.length - 1, idx))];
   }
 
   async getSlowLog(count: number = 10): Promise<SlowLogEntry[]> {

@@ -23,6 +23,8 @@ import { useSelector } from 'react-redux';
 import { RootState } from '@/store';
 import { redisClientService } from '@/services/redis-client';
 import { RedisCommand } from '@/types/redis';
+import { useConnectionErrorHandler } from '@/hooks/useConnectionErrorHandler';
+import ErrorModal from './ErrorModal';
 
 const Terminal = () => {
   const { activeConnection } = useSelector((state: RootState) => state.connection);
@@ -31,6 +33,7 @@ const Terminal = () => {
   const [historyIndex, setHistoryIndex] = useState(-1);
   const [isExecuting, setIsExecuting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const { handleConnectionError, showErrorModal, errorModal, closeErrorModal } = useConnectionErrorHandler();
   
   const inputRef = useRef<HTMLInputElement>(null);
   const historyRef = useRef<HTMLDivElement>(null);
@@ -66,10 +69,22 @@ const Terminal = () => {
         )
       );
     } catch (err) {
+      const errorMessage = String(err);
+      
+      // Verificar se é erro de conexão
+      if (errorMessage.includes('Connection is closed') || 
+          errorMessage.includes('No active Redis connection') ||
+          errorMessage.includes('503')) {
+        handleConnectionError();
+      } else if (errorMessage.includes('500')) {
+        // Erro 500 genérico - mostrar modal
+        showErrorModal('Erro ao executar comando', errorMessage);
+      }
+      
       setHistory(prev => 
         prev.map(cmd => 
           cmd.timestamp === commandEntry.timestamp
-            ? { ...cmd, error: String(err) }
+            ? { ...cmd, error: errorMessage }
             : cmd
         )
       );
@@ -378,6 +393,14 @@ const Terminal = () => {
           </Box>
         </CardContent>
       </Card>
+
+      {/* Error Modal */}
+      <ErrorModal
+        open={errorModal.open}
+        message={errorModal.message}
+        details={errorModal.details}
+        onClose={closeErrorModal}
+      />
     </Box>
   );
 };

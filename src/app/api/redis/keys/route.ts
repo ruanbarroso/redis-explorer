@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { redisService } from '@/services/redis';
+import { getRedisFromSession } from '@/lib/session-helper';
 
 export async function GET(request: NextRequest) {
   try {
@@ -8,16 +8,20 @@ export async function GET(request: NextRequest) {
     const count = parseInt(searchParams.get('count') || '100');
     const loadAll = searchParams.get('loadAll') === 'true';
     
+    // Get Redis from session
+    const redis = await getRedisFromSession();
+    if (!redis) {
+      return NextResponse.json(
+        { error: 'No active Redis connection for this session' },
+        { status: 503 }
+      );
+    }
+    
     if (loadAll) {
       // Load ALL keys using KEYS command directly
       console.log('🚀 API: Carregando TODAS as chaves com KEYS direto...');
       
       try {
-        // Get Redis connection
-        const redis = (redisService as any).getActiveConnection();
-        if (!redis) {
-          throw new Error('No active Redis connection');
-        }
         
         // Use KEYS command directly to get ALL keys
         const allKeyNames = await redis.keys(pattern);
@@ -90,9 +94,76 @@ export async function GET(request: NextRequest) {
         throw directError;
       }
     } else {
-      // Load limited keys (original behavior)
-      const keys = await redisService.getKeys(pattern, count);
-      return NextResponse.json({ keys });
+      // Load limited keys using SCAN
+      const keys = [];
+      let cursor = '0';
+      let iterations = 0;
+      const maxIterations = 100; // Limite de segurança para evitar loops infinitos
+      
+      do {
+        const [newCursor, foundKeys] = await redis.scan(
+          cursor,
+          'MATCH',
+          pattern,
+          'COUNT',
+          100 // Scan mais chaves por iteração
+        );
+        
+        cursor = newCursor;
+        iterations++;
+        
+        // Get details for found keys (em batch para performance)
+        if (foundKeys.length > 0) {
+          const batchPromises = foundKeys.slice(0, count - keys.length).map(async (keyName: string) => {
+            try {
+              const [type, ttl] = await Promise.all([
+                redis.type(keyName),
+                redis.ttl(keyName),
+              ]);
+              
+              let size = 0;
+              try {
+                switch (type) {
+                  case 'string':
+                    size = await redis.strlen(keyName);
+                    break;
+                  case 'hash':
+                    size = await redis.hlen(keyName);
+                    break;
+                  case 'list':
+                    size = await redis.llen(keyName);
+                    break;
+                  case 'set':
+                    size = await redis.scard(keyName);
+                    break;
+                  case 'zset':
+                    size = await redis.zcard(keyName);
+                    break;
+                }
+              } catch {
+                size = 0;
+              }
+              
+              return { name: keyName, type, ttl, size };
+            } catch {
+              return { name: keyName, type: 'string', ttl: -1, size: 0 };
+            }
+          });
+          
+          const batchResults = await Promise.all(batchPromises);
+          keys.push(...batchResults);
+        }
+        
+        // Condições de parada:
+        // 1. Cursor voltou ao início (0)
+        // 2. Já temos chaves suficientes
+        // 3. Atingimos o limite de iterações (segurança)
+        if (cursor === '0' || keys.length >= count || iterations >= maxIterations) {
+          break;
+        }
+      } while (true);
+      
+      return NextResponse.json({ keys: keys.slice(0, count) });
     }
   } catch (error) {
     console.error('❌ API Error:', error);
@@ -112,7 +183,17 @@ export async function DELETE(request: NextRequest) {
   try {
     const { key } = await request.json();
     
-    const success = await redisService.deleteKey(key);
+    // Get Redis from session
+    const redis = await getRedisFromSession();
+    if (!redis) {
+      return NextResponse.json(
+        { error: 'No active Redis connection for this session' },
+        { status: 503 }
+      );
+    }
+    
+    const result = await redis.del(key);
+    const success = result > 0;
     
     return NextResponse.json({ success });
   } catch (error) {

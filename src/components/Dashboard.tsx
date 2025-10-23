@@ -1,926 +1,483 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import {
-  Box,
-  Grid,
-  Card,
-  CardContent,
-  Typography,
-  LinearProgress,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Chip,
-  IconButton,
-  Alert,
-  Paper,
-} from '@mui/material';
+import { Box, Grid, Typography, IconButton, Chip, Divider } from '@mui/material';
 import {
   Refresh as RefreshIcon,
   Memory as MemoryIcon,
   Speed as SpeedIcon,
-  Storage as StorageIcon,
   Timeline as TimelineIcon,
-  AccessTime as UptimeIcon,
-  DataUsage as DataIcon,
-  Wifi as NetworkIcon,
-  Block as BlockIcon,
-  Computer as ServerIcon,
-  Code as CommandIcon,
-  Save as PersistenceIcon,
   Psychology as CpuIcon,
-  AccountTree as ReplicationIcon,
-  Folder as DatabaseIcon,
   TrendingUp as TrendingUpIcon,
+  People as PeopleIcon,
+  DeleteOutline as DeleteIcon,
+  AccessTime as AccessTimeIcon,
+  NetworkCheck as NetworkIcon,
+  Storage as StorageIcon,
+  Sync as SyncIcon,
 } from '@mui/icons-material';
-import { useDispatch, useSelector } from 'react-redux';
+import { useSelector, useDispatch } from 'react-redux';
 import { RootState, AppDispatch } from '@/store';
-import { fetchStats, fetchInfo, fetchSlowLog } from '@/store/slices/statsSlice';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import { format } from 'date-fns';
+import { MetricCard } from './MetricCard';
+import { AlertBanner } from './AlertBanner';
+import { RedisMetrics } from '@/types/metrics';
+import { useRouter } from 'next/navigation';
+import { disconnectFromRedis } from '@/store/slices/connectionSlice';
+import { useConnectionErrorHandler } from '@/hooks/useConnectionErrorHandler';
+import ErrorModal from './ErrorModal';
 
 const Dashboard = () => {
   const dispatch = useDispatch<AppDispatch>();
-  const { stats, info, slowLog, isLoading, error } = useSelector(
-    (state: RootState) => state.stats
-  );
   const { activeConnection } = useSelector((state: RootState) => state.connection);
-
-  const [metricsHistory, setMetricsHistory] = useState<any[]>([]);
+  const [metrics, setMetrics] = useState<RedisMetrics | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
   const [autoRefresh, setAutoRefresh] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const { handleConnectionError, handleFetchError, errorModal, closeErrorModal } = useConnectionErrorHandler();
 
-  useEffect(() => {
-    if (activeConnection?.connected) {
-      // Initial load with a small delay to ensure connection is ready
-      const timeoutId = setTimeout(() => {
-        handleRefresh();
-      }, 100);
-      
-      if (autoRefresh) {
-        const interval = setInterval(() => {
-          // Only refresh if still connected
-          if (activeConnection?.connected) {
-            handleRefresh();
-          }
-        }, 5000);
-        
-        return () => {
-          clearTimeout(timeoutId);
-          clearInterval(interval);
-        };
-      }
-      
-      return () => clearTimeout(timeoutId);
-    }
-  }, [activeConnection?.connected, autoRefresh]);
-
-  useEffect(() => {
-    if (stats) {
-      setMetricsHistory(prev => {
-        const newEntry = {
-          timestamp: Date.now(),
-          time: format(new Date(), 'HH:mm:ss'),
-          memory: stats.usedMemory,
-          ops: stats.instantaneousOpsPerSec,
-          clients: stats.connectedClients,
-        };
-        
-        const updated = [...prev, newEntry];
-        return updated.slice(-20); // Keep last 20 entries
-      });
-    }
-  }, [stats]);
-
-  const handleRefresh = async () => {
+  const fetchMetrics = async (): Promise<boolean> => {
     if (!activeConnection?.connected) {
-      return; // Silently return if no active connection
+      setIsLoading(false);
+      return false;
     }
 
     try {
-      // Dispatch actions with error handling
-      const results = await Promise.allSettled([
-        dispatch(fetchStats()),
-        dispatch(fetchInfo()),
-        dispatch(fetchSlowLog(10))
-      ]);
-
-      // Only log errors if they're not connection-related (502, 503, etc.)
-      results.forEach((result, index) => {
-        if (result.status === 'rejected') {
-          const error = result.reason;
-          // Only log if it's not a network/connection error
-          if (!error?.message?.includes('502') && 
-              !error?.message?.includes('503') && 
-              !error?.message?.includes('Failed to fetch')) {
-            const actions = ['fetchStats', 'fetchInfo', 'fetchSlowLog'];
-            console.error(`Error in ${actions[index]}:`, error);
-          }
-        }
+      const response = await fetch('/api/redis/metrics', {
+        credentials: 'include',
       });
-    } catch (error) {
-      // Only log unexpected errors
-      if (!error?.toString().includes('502') && 
-          !error?.toString().includes('Failed to fetch')) {
-        console.error('Unexpected error during dashboard refresh:', error);
+
+      if (!response.ok) {
+        // Erro HTTP 503 - Redis não conectado ou serviço indisponível
+        if (response.status === 503) {
+          console.error('Redis connection unavailable, redirecting to connections...');
+          handleConnectionError();
+          return false;
+        }
+        throw new Error(`HTTP ${response.status}: Failed to fetch metrics`);
       }
+
+      const data = await response.json();
+      
+      // Verificar se há erro na resposta
+      if (data.error) {
+        console.error('Redis error in response:', data.error);
+        handleConnectionError();
+        return false;
+      }
+
+      setMetrics(data.metrics);
+      setError(null);
+      return true; // Sucesso
+    } catch (err) {
+      console.error('Error fetching metrics:', err);
+      
+      // Erros de rede (fetch failed, timeout, etc)
+      if (err instanceof TypeError && err.message.includes('fetch')) {
+        console.error('Network error, redirecting to connections...');
+        handleConnectionError();
+        return false;
+      }
+      
+      setError(err instanceof Error ? err.message : 'Unknown error');
+      return false;
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  const formatBytes = (bytes: number) => {
-    if (bytes === 0) return '0 B';
-    const k = 1024;
-    const sizes = ['B', 'KB', 'MB', 'GB'];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-  };
+  useEffect(() => {
+    if (activeConnection?.connected) {
+      // Reset state quando trocar de conexão
+      setIsLoading(true);
+      setMetrics(null);
+      setError(null);
+      
+      let isMounted = true;
+
+      const fetchLoop = async () => {
+        // Fazer primeira chamada sempre
+        const success = await fetchMetrics();
+        
+        // Se falhou, desligar auto-refresh e parar
+        if (!success) {
+          console.error('❌ Falha ao buscar métricas, desligando auto-refresh');
+          setAutoRefresh(false);
+          return;
+        }
+        
+        // Se auto-refresh está desligado, parar aqui
+        if (!autoRefresh) {
+          return;
+        }
+        
+        // Loop de auto-refresh
+        while (isMounted && autoRefresh) {
+          // Aguardar 2 segundos antes da próxima chamada
+          await new Promise(resolve => setTimeout(resolve, 2000));
+          
+          // Se não está mais montado ou auto-refresh foi desligado, parar
+          if (!isMounted || !autoRefresh) {
+            break;
+          }
+          
+          const success = await fetchMetrics();
+          
+          // Se falhou, desligar auto-refresh
+          if (!success) {
+            console.error('❌ Falha ao buscar métricas, desligando auto-refresh');
+            setAutoRefresh(false);
+            break;
+          }
+        }
+      };
+
+      // Inicia o loop
+      fetchLoop();
+
+      // Cleanup: para o loop quando desmontar ou mudar dependências
+      return () => {
+        isMounted = false;
+      };
+    } else {
+      // Sem conexão ativa, limpar estado
+      setIsLoading(false);
+      setMetrics(null);
+      setError(null);
+    }
+  }, [activeConnection?.id, autoRefresh]);
 
   const formatNumber = (num: number) => {
     return new Intl.NumberFormat().format(num);
   };
 
   const formatUptime = (seconds: number) => {
-    if (!seconds || isNaN(seconds)) return '0m';
-    
     const days = Math.floor(seconds / 86400);
     const hours = Math.floor((seconds % 86400) / 3600);
     const minutes = Math.floor((seconds % 3600) / 60);
-    
-    if (days > 0) {
-      return `${days}d ${hours}h ${minutes}m`;
-    } else if (hours > 0) {
-      return `${hours}h ${minutes}m`;
-    } else {
-      return `${minutes}m`;
-    }
-  };
 
-  const formatNetworkBytes = (bytes: number) => {
-    if (!bytes || isNaN(bytes)) return '0 B';
-    
-    const units = ['B', 'KB', 'MB', 'GB', 'TB'];
-    let size = bytes;
-    let unitIndex = 0;
-    
-    while (size >= 1024 && unitIndex < units.length - 1) {
-      size /= 1024;
-      unitIndex++;
-    }
-    
-    return `${size.toFixed(1)} ${units[unitIndex]}`;
+    if (days > 0) return `${days}d ${hours}h`;
+    if (hours > 0) return `${hours}h ${minutes}m`;
+    return `${minutes}m`;
   };
 
   if (!activeConnection) {
     return (
       <Box display="flex" flexDirection="column" justifyContent="center" alignItems="center" height="100%" gap={2}>
         <Typography variant="h6" color="text.secondary">
-          No active Redis connection
+          Nenhuma conexão Redis ativa
         </Typography>
         <Typography variant="body2" color="text.secondary" textAlign="center">
-          Please connect to a Redis server from the Connections tab to view the dashboard.
+          Conecte-se a um servidor Redis na aba Connections para visualizar o dashboard.
         </Typography>
       </Box>
     );
   }
 
   return (
-    <Box sx={{ 
-      height: '100%', 
-      overflow: 'auto', 
-      display: 'flex', 
-      flexDirection: 'column',
-      gap: 2
-    }}>
-      {error && (
-        <Alert severity="error" sx={{ mb: 2 }}>
-          {error}
-        </Alert>
-      )}
-
-      <Box display="flex" justifyContent="space-between" alignItems="center">
-        <Typography variant="h5">Redis Dashboard</Typography>
+    <Box sx={{ height: '100%', overflow: 'auto', p: 3 }}>
+      {/* Header */}
+      <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
+        <Box>
+          <Typography variant="h5" fontWeight={700}>
+            Redis Dashboard
+          </Typography>
+          {metrics && (
+            <Typography variant="caption" color="text.secondary">
+              Última atualização: {new Date(metrics.timestamp).toLocaleTimeString()}
+            </Typography>
+          )}
+        </Box>
         <Box display="flex" gap={1} alignItems="center">
           <Chip
             label={autoRefresh ? 'Auto-refresh ON' : 'Auto-refresh OFF'}
             color={autoRefresh ? 'success' : 'default'}
             onClick={() => setAutoRefresh(!autoRefresh)}
             clickable
+            size="small"
           />
-          <IconButton onClick={handleRefresh} disabled={isLoading}>
+          <IconButton 
+            onClick={fetchMetrics} 
+            disabled={isLoading || autoRefresh} 
+            size="small"
+            title={autoRefresh ? 'Desative o auto-refresh para atualizar manualmente' : 'Atualizar métricas'}
+          >
             <RefreshIcon />
           </IconButton>
         </Box>
       </Box>
 
-      <Grid container spacing={3}>
-        {/* Key Metrics */}
-        <Grid item xs={12} sm={6} md={3}>
-          <Card sx={{ height: '100%', minHeight: 140 }}>
-            <CardContent sx={{ height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', p: 2 }}>
-              <Box display="flex" alignItems="center" gap={1} mb={1}>
-                <MemoryIcon color="primary" />
-                <Typography variant="h6">Memory Usage</Typography>
-              </Box>
-              <Typography variant="h4" color="primary">
-                {stats?.usedMemoryHuman || '0B'}
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                {formatNumber(stats?.usedMemory || 0)} bytes
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
+      {/* Alert Banner */}
+      {metrics && metrics.alerts.length > 0 && (
+        <AlertBanner alerts={metrics.alerts} health={metrics.health} />
+      )}
 
+      {/* Métricas Críticas (Tier 1) */}
+      <Typography variant="h6" fontWeight={600} mb={2} color="error.main">
+        Métricas Críticas
+      </Typography>
+      <Grid container spacing={2} mb={4}>
         <Grid item xs={12} sm={6} md={3}>
-          <Card sx={{ height: '100%', minHeight: 140 }}>
-            <CardContent sx={{ height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', p: 2 }}>
-              <Box display="flex" alignItems="center" gap={1} mb={1}>
-                <SpeedIcon color="secondary" />
-                <Typography variant="h6">Operations/sec</Typography>
-              </Box>
-              <Typography variant="h4" color="secondary">
-                {formatNumber(stats?.instantaneousOpsPerSec || 0)}
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                Current throughput
-              </Typography>
-            </CardContent>
-          </Card>
+          <MetricCard
+            title="Cache Hit Ratio"
+            value={metrics && metrics.cacheHitRatio != null ? `${metrics.cacheHitRatio.toFixed(1)}%` : '-'}
+            subtitle="Eficiência do cache"
+            icon={<TrendingUpIcon />}
+            color={
+              !metrics
+                ? 'primary'
+                : metrics.cacheHitRatio >= 80
+                ? 'success'
+                : metrics.cacheHitRatio >= 50
+                ? 'warning'
+                : 'error'
+            }
+            tooltip="Percentual de requisições atendidas pelo cache. Ideal: >80%. Crítico: <50%. Um valor baixo indica que o cache está pequeno ou há muitas evictions."
+            loading={isLoading}
+          />
         </Grid>
 
         <Grid item xs={12} sm={6} md={3}>
-          <Card sx={{ height: '100%', minHeight: 140 }}>
-            <CardContent sx={{ height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', p: 2 }}>
-              <Box display="flex" alignItems="center" gap={1} mb={1}>
-                <StorageIcon color="success" />
-                <Typography variant="h6">Connected Clients</Typography>
-              </Box>
-              <Typography variant="h4" color="success">
-                {formatNumber(stats?.connectedClients || 0)}
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                Active connections
-              </Typography>
-            </CardContent>
-          </Card>
+          <MetricCard
+            title="Memory Usage"
+            value={metrics ? metrics.memoryUsage.usedHuman : '-'}
+            subtitle={
+              metrics?.memoryUsage?.max && metrics.memoryUsage.max > 0 && metrics.memoryUsage.percentage != null
+                ? `${metrics.memoryUsage.percentage.toFixed(1)}% de ${metrics.memoryUsage.maxHuman}`
+                : 'Sem limite configurado'
+            }
+            icon={<MemoryIcon />}
+            color={
+              !metrics || !metrics.memoryUsage?.max
+                ? 'primary'
+                : metrics.memoryUsage.percentage >= 80
+                ? 'error'
+                : metrics.memoryUsage.percentage >= 70
+                ? 'warning'
+                : 'success'
+            }
+            tooltip="Uso de memória atual. Warning: ≥70%. Critical: ≥80%. Para workloads non-caching, monitore de perto a partir de 80% para evitar OOM."
+            loading={isLoading}
+          />
         </Grid>
 
         <Grid item xs={12} sm={6} md={3}>
-          <Card sx={{ height: '100%', minHeight: 140 }}>
-            <CardContent sx={{ height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', p: 2 }}>
-              <Box display="flex" alignItems="center" gap={1} mb={1}>
-                <TimelineIcon color="warning" />
-                <Typography variant="h6">Total Commands</Typography>
-              </Box>
-              <Typography variant="h4" color="warning">
-                {formatNumber(stats?.totalCommandsProcessed || 0)}
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                Since startup
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-
-        {/* Server Info */}
-        <Grid item xs={12} sm={6} md={3}>
-          <Card sx={{ height: '100%', minHeight: 140 }}>
-            <CardContent sx={{ height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', p: 2 }}>
-              <Box display="flex" alignItems="center" gap={1} mb={1}>
-                <UptimeIcon color="info" />
-                <Typography variant="h6">Uptime</Typography>
-              </Box>
-              <Typography variant="h4" color="info">
-                {stats?.uptimeInDays || 0}d
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                {formatUptime(stats?.uptimeInSeconds || 0)}
-              </Typography>
-            </CardContent>
-          </Card>
+          <MetricCard
+            title="Memory Fragmentation"
+            value={metrics && metrics.memoryFragmentation?.ratio != null ? metrics.memoryFragmentation.ratio.toFixed(2) : '-'}
+            subtitle="Razão RSS/Used"
+            icon={<StorageIcon />}
+            color={
+              !metrics
+                ? 'primary'
+                : metrics.memoryFragmentation.ratio < 1.0
+                ? 'error'
+                : metrics.memoryFragmentation.ratio >= 1.5
+                ? 'error'
+                : metrics.memoryFragmentation.ratio >= 1.4
+                ? 'warning'
+                : 'success'
+            }
+            tooltip="Razão entre memória física (RSS) e memória usada. Ideal: 1.0-1.4. <1.0: Redis usando swap (crítico). >1.5: Fragmentação alta, considere restart."
+            loading={isLoading}
+          />
         </Grid>
 
         <Grid item xs={12} sm={6} md={3}>
-          <Card sx={{ height: '100%', minHeight: 140 }}>
-            <CardContent sx={{ height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', p: 2 }}>
-              <Box display="flex" alignItems="center" gap={1} mb={1}>
-                <DataIcon color="primary" />
-                <Typography variant="h6">Total Keys</Typography>
-              </Box>
-              <Typography variant="h4" color="primary">
-                {formatNumber(stats?.totalKeys || 0)}
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                {formatNumber(stats?.totalExpires || 0)} with TTL
-              </Typography>
-            </CardContent>
-          </Card>
+          <MetricCard
+            title="CPU Usage"
+            value={metrics && metrics.cpu?.percentage != null ? `${metrics.cpu.percentage.toFixed(1)}%` : '-'}
+            subtitle="Processo Redis"
+            icon={<CpuIcon />}
+            color={
+              !metrics
+                ? 'primary'
+                : metrics.cpu.percentage >= 80
+                ? 'error'
+                : metrics.cpu.percentage >= 65
+                ? 'warning'
+                : 'success'
+            }
+            tooltip="Uso de CPU do processo Redis. Warning: ≥65%. Critical: ≥80%. Redis é single-threaded, valores altos indicam comandos ineficientes ou alto throughput."
+            loading={isLoading}
+          />
         </Grid>
 
         <Grid item xs={12} sm={6} md={3}>
-          <Card sx={{ height: '100%', minHeight: 140 }}>
-            <CardContent sx={{ height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', p: 2 }}>
-              <Box display="flex" alignItems="center" gap={1} mb={1}>
-                <NetworkIcon color="success" />
-                <Typography variant="h6">Network I/O</Typography>
-              </Box>
-              <Typography variant="body1" color="success">
-                ↓ {formatNetworkBytes(stats?.totalNetInputBytes || 0)}
-              </Typography>
-              <Typography variant="body1" color="error">
-                ↑ {formatNetworkBytes(stats?.totalNetOutputBytes || 0)}
-              </Typography>
-            </CardContent>
-          </Card>
+          <MetricCard
+            title="Latency P50"
+            value={metrics?.latency?.p50 !== null && metrics?.latency?.p50 !== undefined ? `${metrics.latency.p50.toFixed(2)}ms` : 'N/A'}
+            subtitle="Mediana de latência"
+            icon={<TimelineIcon />}
+            color={
+              !metrics || !metrics.latency || metrics.latency.p50 === null
+                ? 'primary'
+                : metrics.latency.p50 < 1
+                ? 'success'
+                : metrics.latency.p50 < 5
+                ? 'warning'
+                : 'error'
+            }
+            tooltip="Latência mediana (P50) das operações. Redis deve operar em sub-millisecond. Valores >1ms indicam possíveis problemas de performance."
+            loading={isLoading}
+          />
         </Grid>
 
         <Grid item xs={12} sm={6} md={3}>
-          <Card sx={{ height: '100%', minHeight: 140 }}>
-            <CardContent sx={{ height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', p: 2 }}>
-              <Box display="flex" alignItems="center" gap={1} mb={1}>
-                <BlockIcon color="warning" />
-                <Typography variant="h6">Blocked Clients</Typography>
-              </Box>
-              <Typography variant="h4" color="warning">
-                {formatNumber(stats?.blockedClients || 0)}
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                Waiting for data
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-
-        {/* Performance Chart */}
-        <Grid item xs={12} lg={8}>
-          <Card sx={{ height: '100%' }}>
-            <CardContent sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-              <Typography variant="h6" gutterBottom>
-                Performance Metrics
-              </Typography>
-              <Box flex={1} minHeight={300}>
-                <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={metricsHistory}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="time" />
-                    <YAxis yAxisId="left" />
-                    <YAxis yAxisId="right" orientation="right" />
-                    <Tooltip />
-                    <Line
-                      yAxisId="left"
-                      type="monotone"
-                      dataKey="ops"
-                      stroke="#f50057"
-                      name="Ops/sec"
-                      strokeWidth={2}
-                    />
-                    <Line
-                      yAxisId="right"
-                      type="monotone"
-                      dataKey="clients"
-                      stroke="#2196f3"
-                      name="Clients"
-                      strokeWidth={2}
-                    />
-                  </LineChart>
-                </ResponsiveContainer>
-              </Box>
-            </CardContent>
-          </Card>
-        </Grid>
-
-        {/* Hit Rate */}
-        <Grid item xs={12} lg={4}>
-          <Card sx={{ height: '100%' }}>
-            <CardContent sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-              <Typography variant="h6" gutterBottom>
-                Cache Hit Rate
-              </Typography>
-              <Box flex={1} display="flex" flexDirection="column" justifyContent="center">
-                <Box display="flex" justifyContent="space-between" mb={1}>
-                  <Typography variant="body2">Hits</Typography>
-                  <Typography variant="body2">
-                    {formatNumber(stats?.keyspaceHits || 0)}
-                  </Typography>
-                </Box>
-                <Box display="flex" justifyContent="space-between" mb={1}>
-                  <Typography variant="body2">Misses</Typography>
-                  <Typography variant="body2">
-                    {formatNumber(stats?.keyspaceMisses || 0)}
-                  </Typography>
-                </Box>
-                <LinearProgress
-                  variant="determinate"
-                  value={
-                    stats?.keyspaceHits && stats?.keyspaceMisses
-                      ? (stats.keyspaceHits / (stats.keyspaceHits + stats.keyspaceMisses)) * 100
-                      : 0
-                  }
-                  sx={{ height: 8, borderRadius: 4 }}
-                />
-                <Typography variant="h4" color="primary" mt={1}>
-                  {stats?.keyspaceHits && stats?.keyspaceMisses
-                    ? ((stats.keyspaceHits / (stats.keyspaceHits + stats.keyspaceMisses)) * 100).toFixed(1)
-                    : '0'}%
-                </Typography>
-              </Box>
-              
-              <Typography variant="body2" color="text.secondary" mb={1}>
-                Evicted Keys: {formatNumber(stats?.evictedKeys || 0)}
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                Expired Keys: {formatNumber(stats?.expiredKeys || 0)}
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-
-        {/* Slow Log */}
-        <Grid item xs={12}>
-          <Card>
-            <CardContent>
-              <Typography variant="h6" gutterBottom>
-                Slow Log (Last 10 Commands)
-              </Typography>
-              <TableContainer component={Paper} variant="outlined">
-                <Table size="small">
-                  <TableHead>
-                    <TableRow>
-                      <TableCell>ID</TableCell>
-                      <TableCell>Timestamp</TableCell>
-                      <TableCell>Duration (μs)</TableCell>
-                      <TableCell>Command</TableCell>
-                      <TableCell>Client</TableCell>
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {slowLog.length === 0 ? (
-                      <TableRow>
-                        <TableCell colSpan={5} align="center">
-                          <Typography color="text.secondary">
-                            No slow commands recorded
-                          </Typography>
-                        </TableCell>
-                      </TableRow>
-                    ) : (
-                      slowLog.map((entry) => (
-                        <TableRow key={entry.id}>
-                          <TableCell>{entry.id}</TableCell>
-                          <TableCell>
-                            {format(new Date(entry.timestamp * 1000), 'HH:mm:ss')}
-                          </TableCell>
-                          <TableCell>
-                            <Chip
-                              label={formatNumber(entry.duration)}
-                              color={entry.duration > 10000 ? 'error' : 'warning'}
-                              size="small"
-                            />
-                          </TableCell>
-                          <TableCell sx={{ fontFamily: 'monospace' }}>
-                            {entry.command.join(' ')}
-                          </TableCell>
-                          <TableCell>
-                            {entry.clientAddress || 'N/A'}
-                          </TableCell>
-                        </TableRow>
-                      ))
-                    )}
-                  </TableBody>
-                </Table>
-              </TableContainer>
-            </CardContent>
-          </Card>
-        </Grid>
-
-        {/* Memory Details */}
-        <Grid item xs={12} md={6}>
-          <Card sx={{ height: '100%', minHeight: 280 }}>
-            <CardContent sx={{ height: '100%', display: 'flex', flexDirection: 'column', p: 2 }}>
-              <Typography variant="h6" gutterBottom>
-                Memory Details
-              </Typography>
-              <Box mb={2}>
-                <Box display="flex" justifyContent="space-between" mb={1}>
-                  <Typography variant="body2">Used Memory</Typography>
-                  <Typography variant="body2">{stats?.usedMemoryHuman}</Typography>
-                </Box>
-                <Box display="flex" justifyContent="space-between" mb={1}>
-                  <Typography variant="body2">Max Memory</Typography>
-                  <Typography variant="body2">{stats?.maxMemoryHuman || 'Unlimited'}</Typography>
-                </Box>
-                <Box display="flex" justifyContent="space-between" mb={1}>
-                  <Typography variant="body2">Fragmentation Ratio</Typography>
-                  <Typography variant="body2" color={
-                    (stats?.memoryFragmentationRatio || 1) > 1.5 ? 'error' : 
-                    (stats?.memoryFragmentationRatio || 1) > 1.2 ? 'warning' : 'success'
-                  }>
-                    {(stats?.memoryFragmentationRatio || 1).toFixed(2)}
-                  </Typography>
-                </Box>
-                {stats?.maxMemory && stats.maxMemory > 0 && (
-                  <LinearProgress
-                    variant="determinate"
-                    value={(stats.usedMemory / stats.maxMemory) * 100}
-                    sx={{ height: 8, borderRadius: 4 }}
-                    color={
-                      (stats.usedMemory / stats.maxMemory) > 0.9 ? 'error' :
-                      (stats.usedMemory / stats.maxMemory) > 0.7 ? 'warning' : 'primary'
-                    }
-                  />
-                )}
-              </Box>
-            </CardContent>
-          </Card>
-        </Grid>
-
-        {/* Replication & Sync */}
-        <Grid item xs={12} md={6}>
-          <Card sx={{ height: '100%', minHeight: 280 }}>
-            <CardContent sx={{ height: '100%', display: 'flex', flexDirection: 'column', p: 2 }}>
-              <Typography variant="h6" gutterBottom>
-                Replication & Sync
-              </Typography>
-              <Box display="flex" justifyContent="space-between" mb={1}>
-                <Typography variant="body2">Full Syncs</Typography>
-                <Typography variant="body2">{formatNumber(stats?.syncFull || 0)}</Typography>
-              </Box>
-              <Box display="flex" justifyContent="space-between" mb={1}>
-                <Typography variant="body2">Partial Sync OK</Typography>
-                <Typography variant="body2" color="success">{formatNumber(stats?.syncPartialOk || 0)}</Typography>
-              </Box>
-              <Box display="flex" justifyContent="space-between" mb={1}>
-                <Typography variant="body2">Partial Sync Errors</Typography>
-                <Typography variant="body2" color="error">{formatNumber(stats?.syncPartialErr || 0)}</Typography>
-              </Box>
-              <Box display="flex" justifyContent="space-between" mb={1}>
-                <Typography variant="body2">Rejected Connections</Typography>
-                <Typography variant="body2" color={stats?.rejectedConnections ? 'error' : 'inherit'}>
-                  {formatNumber(stats?.rejectedConnections || 0)}
-                </Typography>
-              </Box>
-              <Box display="flex" justifyContent="space-between" mb={1}>
-                <Typography variant="body2">Latest Fork Time</Typography>
-                <Typography variant="body2">
-                  {stats?.latestForkUsec ? `${(stats.latestForkUsec / 1000).toFixed(1)}ms` : 'N/A'}
-                </Typography>
-              </Box>
-            </CardContent>
-          </Card>
-        </Grid>
-
-        {/* Pub/Sub & Client Info */}
-        <Grid item xs={12} md={6}>
-          <Card sx={{ height: '100%', minHeight: 280 }}>
-            <CardContent sx={{ height: '100%', display: 'flex', flexDirection: 'column', p: 2 }}>
-              <Typography variant="h6" gutterBottom>
-                Pub/Sub & Clients
-              </Typography>
-              <Box display="flex" justifyContent="space-between" mb={1}>
-                <Typography variant="body2">Pub/Sub Channels</Typography>
-                <Typography variant="body2">{formatNumber(stats?.pubsubChannels || 0)}</Typography>
-              </Box>
-              <Box display="flex" justifyContent="space-between" mb={1}>
-                <Typography variant="body2">Pub/Sub Patterns</Typography>
-                <Typography variant="body2">{formatNumber(stats?.pubsubPatterns || 0)}</Typography>
-              </Box>
-              <Box display="flex" justifyContent="space-between" mb={1}>
-                <Typography variant="body2">Connected Clients</Typography>
-                <Typography variant="body2">{formatNumber(stats?.connectedClients || 0)}</Typography>
-              </Box>
-              <Box display="flex" justifyContent="space-between" mb={1}>
-                <Typography variant="body2">Blocked Clients</Typography>
-                <Typography variant="body2" color={stats?.blockedClients ? 'warning' : 'inherit'}>
-                  {formatNumber(stats?.blockedClients || 0)}
-                </Typography>
-              </Box>
-              <Box display="flex" justifyContent="space-between" mb={1}>
-                <Typography variant="body2">Tracking Clients</Typography>
-                <Typography variant="body2">{formatNumber(stats?.trackingClients || 0)}</Typography>
-              </Box>
-            </CardContent>
-          </Card>
-        </Grid>
-
-        {/* Keyspace Summary */}
-        <Grid item xs={12} md={6}>
-          <Card sx={{ height: '100%', minHeight: 280 }}>
-            <CardContent sx={{ height: '100%', display: 'flex', flexDirection: 'column', p: 2 }}>
-              <Typography variant="h6" gutterBottom>
-                Keyspace Summary
-              </Typography>
-              <Box display="flex" justifyContent="space-between" mb={1}>
-                <Typography variant="body2">Total Keys</Typography>
-                <Typography variant="body2">{formatNumber(stats?.totalKeys || 0)}</Typography>
-              </Box>
-              <Box display="flex" justifyContent="space-between" mb={1}>
-                <Typography variant="body2">Keys with TTL</Typography>
-                <Typography variant="body2">{formatNumber(stats?.totalExpires || 0)}</Typography>
-              </Box>
-              <Box display="flex" justifyContent="space-between" mb={1}>
-                <Typography variant="body2">TTL Percentage</Typography>
-                <Typography variant="body2">
-                  {stats?.totalKeys ? ((stats.totalExpires / stats.totalKeys) * 100).toFixed(1) : '0'}%
-                </Typography>
-              </Box>
-              <Box display="flex" justifyContent="space-between" mb={1}>
-                <Typography variant="body2">Expired Keys</Typography>
-                <Typography variant="body2">{formatNumber(stats?.expiredKeys || 0)}</Typography>
-              </Box>
-              <Box display="flex" justifyContent="space-between" mb={1}>
-                <Typography variant="body2">Evicted Keys</Typography>
-                <Typography variant="body2" color={stats?.evictedKeys ? 'warning' : 'inherit'}>
-                  {formatNumber(stats?.evictedKeys || 0)}
-                </Typography>
-              </Box>
-            </CardContent>
-          </Card>
-        </Grid>
-
-        {/* Server Information */}
-        <Grid item xs={12} md={6}>
-          <Card sx={{ height: '100%', minHeight: 280 }}>
-            <CardContent sx={{ height: '100%', display: 'flex', flexDirection: 'column', p: 2 }}>
-              <Typography variant="h6" gutterBottom>
-                <Box display="flex" alignItems="center" gap={1}>
-                  <ServerIcon color="primary" />
-                  Server Information
-                </Box>
-              </Typography>
-              <Box display="flex" justifyContent="space-between" mb={1}>
-                <Typography variant="body2">Redis Version</Typography>
-                <Typography variant="body2" fontWeight="medium">
-                  {stats?.redisVersion || info?.server?.redis_version || 'N/A'}
-                </Typography>
-              </Box>
-              <Box display="flex" justifyContent="space-between" mb={1}>
-                <Typography variant="body2">Mode</Typography>
-                <Typography variant="body2">
-                  {stats?.redisMode || info?.server?.redis_mode || 'standalone'}
-                </Typography>
-              </Box>
-              <Box display="flex" justifyContent="space-between" mb={1}>
-                <Typography variant="body2">Operating System</Typography>
-                <Typography variant="body2">
-                  {stats?.os || info?.server?.os || 'N/A'}
-                </Typography>
-              </Box>
-              <Box display="flex" justifyContent="space-between" mb={1}>
-                <Typography variant="body2">Architecture</Typography>
-                <Typography variant="body2">
-                  {stats?.archBits ? `${stats.archBits} bits` : 
-                   info?.server?.arch_bits ? `${info.server.arch_bits} bits` : 'N/A'}
-                </Typography>
-              </Box>
-              <Box display="flex" justifyContent="space-between" mb={1}>
-                <Typography variant="body2">Process ID</Typography>
-                <Typography variant="body2" fontFamily="monospace">
-                  {stats?.processId || info?.server?.process_id || 'N/A'}
-                </Typography>
-              </Box>
-              <Box display="flex" justifyContent="space-between" mb={1}>
-                <Typography variant="body2">TCP Port</Typography>
-                <Typography variant="body2" fontFamily="monospace">
-                  {stats?.tcpPort || info?.server?.tcp_port || 'N/A'}
-                </Typography>
-              </Box>
-            </CardContent>
-          </Card>
-        </Grid>
-
-        {/* CPU Usage */}
-        <Grid item xs={12} md={6}>
-          <Card sx={{ height: '100%', minHeight: 280 }}>
-            <CardContent sx={{ height: '100%', display: 'flex', flexDirection: 'column', p: 2 }}>
-              <Typography variant="h6" gutterBottom>
-                <Box display="flex" alignItems="center" gap={1}>
-                  <CpuIcon color="secondary" />
-                  CPU Usage
-                </Box>
-              </Typography>
-              <Box display="flex" justifyContent="space-between" mb={1}>
-                <Typography variant="body2">System CPU Time</Typography>
-                <Typography variant="body2" color="secondary">
-                  {info?.cpu?.used_cpu_sys ? `${parseFloat(info.cpu.used_cpu_sys).toFixed(2)}s` : 
-                   stats?.usedCpuSys ? `${stats.usedCpuSys.toFixed(2)}s` : '0s'}
-                </Typography>
-              </Box>
-              <Box display="flex" justifyContent="space-between" mb={1}>
-                <Typography variant="body2">User CPU Time</Typography>
-                <Typography variant="body2" color="primary">
-                  {info?.cpu?.used_cpu_user ? `${parseFloat(info.cpu.used_cpu_user).toFixed(2)}s` : 
-                   stats?.usedCpuUser ? `${stats.usedCpuUser.toFixed(2)}s` : '0s'}
-                </Typography>
-              </Box>
-              <Box display="flex" justifyContent="space-between" mb={1}>
-                <Typography variant="body2">CPU Percentage</Typography>
-                <Typography variant="body2" color="warning.main" fontWeight="medium">
-                  {info?.cpu?.used_cpu_sys && info?.server?.uptime_in_seconds ? 
-                    `${Math.min((parseFloat(info.cpu.used_cpu_sys) / parseInt(info.server.uptime_in_seconds)) * 100, 100).toFixed(2)}%` :
-                    'N/A (uptime required)'}
-                </Typography>
-              </Box>
-              <Box display="flex" justifyContent="space-between" mb={1}>
-                <Typography variant="body2">Server Uptime</Typography>
-                <Typography variant="body2" color="text.secondary">
-                  {info?.server?.uptime_in_seconds ? 
-                    `${parseInt(info.server.uptime_in_seconds).toLocaleString()}s (${Math.floor(parseInt(info.server.uptime_in_seconds) / 86400)}d)` :
-                    'N/A'}
-                </Typography>
-              </Box>
-              <Box display="flex" justifyContent="space-between" mb={1}>
-                <Typography variant="body2">System CPU (Children)</Typography>
-                <Typography variant="body2">
-                  {stats?.usedCpuSysChildren ? `${stats.usedCpuSysChildren.toFixed(2)}s` : '0s'}
-                </Typography>
-              </Box>
-              <Box display="flex" justifyContent="space-between" mb={1}>
-                <Typography variant="body2">User CPU (Children)</Typography>
-                <Typography variant="body2">
-                  {stats?.usedCpuUserChildren ? `${stats.usedCpuUserChildren.toFixed(2)}s` : '0s'}
-                </Typography>
-              </Box>
-              <Box display="flex" justifyContent="space-between" mb={1}>
-                <Typography variant="body2">Total CPU Time</Typography>
-                <Typography variant="body2" fontWeight="medium" color="info.main">
-                  {info?.cpu?.used_cpu_sys && info?.cpu?.used_cpu_user 
-                    ? `${(parseFloat(info.cpu.used_cpu_sys) + parseFloat(info.cpu.used_cpu_user)).toFixed(2)}s` 
-                    : 'N/A'}
-                </Typography>
-              </Box>
-            </CardContent>
-          </Card>
-        </Grid>
-
-        {/* Command Statistics */}
-        <Grid item xs={12}>
-          <Card sx={{ height: '100%' }}>
-            <CardContent sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-              <Typography variant="h6" gutterBottom>
-                <Box display="flex" alignItems="center" gap={1}>
-                  <CommandIcon color="secondary" />
-                  Top Commands
-                </Box>
-              </Typography>
-              <TableContainer sx={{ flex: 1 }}>
-                <Table size="small">
-                  <TableHead>
-                    <TableRow>
-                      <TableCell>Command</TableCell>
-                      <TableCell align="right">Calls</TableCell>
-                      <TableCell align="right">% Total</TableCell>
-                      <TableCell align="right">Avg Time (μs)</TableCell>
-                      <TableCell align="right">Total Time</TableCell>
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {stats?.commandStats?.length ? (
-                      stats.commandStats.map((cmd) => (
-                        <TableRow key={cmd.command}>
-                          <TableCell sx={{ fontFamily: 'monospace', fontWeight: 'medium' }}>
-                            {cmd.command}
-                          </TableCell>
-                          <TableCell align="right">{formatNumber(cmd.calls)}</TableCell>
-                          <TableCell align="right">
-                            <Chip 
-                              label={`${cmd.percentage.toFixed(1)}%`}
-                              color={cmd.percentage > 20 ? 'primary' : cmd.percentage > 5 ? 'secondary' : 'default'}
-                              size="small"
-                            />
-                          </TableCell>
-                          <TableCell align="right">{cmd.usecPerCall.toFixed(1)}</TableCell>
-                          <TableCell align="right">{formatNumber(cmd.usec)}</TableCell>
-                        </TableRow>
-                      ))
-                    ) : (
-                      <TableRow>
-                        <TableCell colSpan={5} align="center">
-                          <Typography color="text.secondary">
-                            No command statistics available
-                          </Typography>
-                        </TableCell>
-                      </TableRow>
-                    )}
-                  </TableBody>
-                </Table>
-              </TableContainer>
-            </CardContent>
-          </Card>
-        </Grid>
-
-        {/* Persistence Status */}
-        <Grid item xs={12} md={6}>
-          <Card sx={{ height: '100%', minHeight: 280 }}>
-            <CardContent sx={{ height: '100%', display: 'flex', flexDirection: 'column', p: 2 }}>
-              <Typography variant="h6" gutterBottom>
-                <Box display="flex" alignItems="center" gap={1}>
-                  <PersistenceIcon color="success" />
-                  Persistence Status
-                </Box>
-              </Typography>
-              <Box display="flex" justifyContent="space-between" mb={1}>
-                <Typography variant="body2">RDB Last Save</Typography>
-                <Typography variant="body2">
-                  {stats?.rdbLastSaveTime 
-                    ? format(new Date(stats.rdbLastSaveTime * 1000), 'HH:mm:ss')
-                    : 'Never'}
-                </Typography>
-              </Box>
-              <Box display="flex" justifyContent="space-between" mb={1}>
-                <Typography variant="body2">Changes Since Save</Typography>
-                <Typography variant="body2" color={stats?.rdbChangesSinceLastSave ? 'warning' : 'inherit'}>
-                  {formatNumber(stats?.rdbChangesSinceLastSave || 0)}
-                </Typography>
-              </Box>
-              <Box display="flex" justifyContent="space-between" mb={1}>
-                <Typography variant="body2">Last Bgsave Status</Typography>
-                <Chip 
-                  label={stats?.rdbLastBgsaveStatus || 'Unknown'}
-                  color={stats?.rdbLastBgsaveStatus === 'ok' ? 'success' : 'error'}
-                  size="small"
-                />
-              </Box>
-              <Box display="flex" justifyContent="space-between" mb={1}>
-                <Typography variant="body2">AOF Enabled</Typography>
-                <Chip 
-                  label={stats?.aofEnabled ? 'Yes' : 'No'}
-                  color={stats?.aofEnabled ? 'success' : 'default'}
-                  size="small"
-                />
-              </Box>
-              {stats?.aofEnabled && (
-                <>
-                  <Box display="flex" justifyContent="space-between" mb={1}>
-                    <Typography variant="body2">AOF Current Size</Typography>
-                    <Typography variant="body2">{formatBytes(stats?.aofCurrentSize || 0)}</Typography>
-                  </Box>
-                  <Box display="flex" justifyContent="space-between" mb={1}>
-                    <Typography variant="body2">AOF Rewrite</Typography>
-                    <Chip 
-                      label={stats?.aofRewriteInProgress ? 'In Progress' : 'Idle'}
-                      color={stats?.aofRewriteInProgress ? 'warning' : 'success'}
-                      size="small"
-                    />
-                  </Box>
-                </>
-              )}
-            </CardContent>
-          </Card>
-        </Grid>
-
-        {/* Database Breakdown */}
-        <Grid item xs={12} md={6}>
-          <Card sx={{ height: '100%' }}>
-            <CardContent sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-              <Typography variant="h6" gutterBottom>
-                <Box display="flex" alignItems="center" gap={1}>
-                  <DatabaseIcon color="primary" />
-                  Database Breakdown
-                </Box>
-              </Typography>
-              {stats?.databases?.length ? (
-                <Box sx={{ flex: 1, overflow: 'auto' }}>
-                  {stats.databases.map((db) => (
-                    <Box key={db.db} sx={{ mb: 2, p: 1, border: 1, borderColor: 'divider', borderRadius: 1 }}>
-                      <Typography variant="subtitle2" fontWeight="medium" mb={1}>
-                        Database {db.db}
-                      </Typography>
-                      <Box display="flex" justifyContent="space-between" mb={0.5}>
-                        <Typography variant="body2">Keys</Typography>
-                        <Typography variant="body2" fontWeight="medium">
-                          {formatNumber(db.keys)}
-                        </Typography>
-                      </Box>
-                      <Box display="flex" justifyContent="space-between" mb={0.5}>
-                        <Typography variant="body2">With TTL</Typography>
-                        <Typography variant="body2">
-                          {formatNumber(db.expires)} ({db.keys > 0 ? ((db.expires / db.keys) * 100).toFixed(1) : '0'}%)
-                        </Typography>
-                      </Box>
-                      {db.avgTtl > 0 && (
-                        <Box display="flex" justifyContent="space-between">
-                          <Typography variant="body2">Avg TTL</Typography>
-                          <Typography variant="body2">
-                            {Math.round(db.avgTtl / 1000)}s
-                          </Typography>
-                        </Box>
-                      )}
-                    </Box>
-                  ))}
-                </Box>
-              ) : (
-                <Box sx={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <Typography color="text.secondary" textAlign="center">
-                    No database information available
-                  </Typography>
-                </Box>
-              )}
-            </CardContent>
-          </Card>
+          <MetricCard
+            title="Latency P95"
+            value={metrics?.latency?.p95 !== null && metrics?.latency?.p95 !== undefined ? `${metrics.latency.p95.toFixed(2)}ms` : 'N/A'}
+            subtitle="95º percentil"
+            icon={<TimelineIcon />}
+            color={
+              !metrics || !metrics.latency || metrics.latency.p95 === null
+                ? 'primary'
+                : metrics.latency.p95 >= 10
+                ? 'error'
+                : metrics.latency.p95 >= 5
+                ? 'warning'
+                : 'success'
+            }
+            tooltip="Latência P95 das operações. Warning: ≥5ms. Critical: ≥10ms. Valores altos indicam comandos lentos ou sobrecarga."
+            loading={isLoading}
+          />
         </Grid>
       </Grid>
+
+      <Divider sx={{ my: 3 }} />
+
+      {/* Métricas de Performance (Tier 2) */}
+      <Typography variant="h6" fontWeight={600} mb={2} color="warning.main">
+        Performance
+      </Typography>
+      <Grid container spacing={2} mb={4}>
+        <Grid item xs={12} sm={6} md={3}>
+          <MetricCard
+            title="Operations/sec"
+            value={metrics ? formatNumber(metrics.throughput.opsPerSec) : '-'}
+            subtitle="Throughput atual"
+            icon={<SpeedIcon />}
+            color="secondary"
+            tooltip="Número de operações por segundo. Indica o throughput atual do Redis. Monitore junto com CPU e latência para identificar gargalos."
+            loading={isLoading}
+          />
+        </Grid>
+
+        <Grid item xs={12} sm={6} md={3}>
+          <MetricCard
+            title="Connected Clients"
+            value={metrics ? formatNumber(metrics.connections.connected) : '-'}
+            subtitle={metrics?.connections?.blocked ? `${metrics.connections.blocked} bloqueados` : 'Nenhum bloqueado'}
+            icon={<PeopleIcon />}
+            color={metrics?.connections?.blocked ? 'warning' : 'success'}
+            tooltip="Número de clientes conectados. Redis suporta até 10.000 por padrão. Clientes bloqueados indicam operações aguardando (BLPOP, BRPOP, etc)."
+            loading={isLoading}
+          />
+        </Grid>
+
+        <Grid item xs={12} sm={6} md={3}>
+          <MetricCard
+            title="Evicted Keys"
+            value={metrics ? formatNumber(metrics.eviction.evictedKeys) : '-'}
+            subtitle={metrics && metrics.eviction?.evictedPerSec != null ? `${metrics.eviction.evictedPerSec.toFixed(1)}/s` : '-'}
+            icon={<DeleteIcon />}
+            color={metrics?.eviction?.evictedPerSec && metrics.eviction.evictedPerSec > 100 ? 'warning' : 'info'}
+            tooltip="Chaves removidas por política de eviction. Taxa alta (>100/s) indica memória insuficiente. Aceitável para workloads de cache."
+            loading={isLoading}
+          />
+        </Grid>
+
+        <Grid item xs={12} sm={6} md={3}>
+          <MetricCard
+            title="Expired Keys"
+            value={metrics ? formatNumber(metrics.expiration.expiredKeys) : '-'}
+            subtitle={metrics && metrics.expiration?.expiredPerSec != null ? `${metrics.expiration.expiredPerSec.toFixed(1)}/s` : '-'}
+            icon={<AccessTimeIcon />}
+            color="info"
+            tooltip="Chaves expiradas por TTL. Expiração natural de chaves com time-to-live configurado. Use TTL para controlar crescimento do dataset."
+            loading={isLoading}
+          />
+        </Grid>
+      </Grid>
+
+      <Divider sx={{ my: 3 }} />
+
+      {/* Métricas de Atividade (Tier 3) */}
+      <Typography variant="h6" fontWeight={600} mb={2} color="info.main">
+        Atividade & Recursos
+      </Typography>
+      <Grid container spacing={2} mb={4}>
+        <Grid item xs={12} sm={6} md={3}>
+          <MetricCard
+            title="Network I/O"
+            value={metrics && metrics.network?.inputKbps != null ? `${metrics.network.inputKbps.toFixed(1)} KB/s` : '-'}
+            subtitle={metrics && metrics.network?.outputKbps != null ? `↑ ${metrics.network.outputKbps.toFixed(1)} KB/s` : '-'}
+            icon={<NetworkIcon />}
+            color="info"
+            tooltip="Taxa de entrada/saída de rede. Monitore para identificar picos de tráfego ou possíveis gargalos de rede."
+            loading={isLoading}
+          />
+        </Grid>
+
+        <Grid item xs={12} sm={6} md={3}>
+          <MetricCard
+            title="Total Keys"
+            value={metrics ? formatNumber(metrics.keyspace.totalKeys) : '-'}
+            subtitle={metrics ? `${formatNumber(metrics.keyspace.totalExpires)} com TTL` : '-'}
+            icon={<StorageIcon />}
+            color="info"
+            tooltip="Total de chaves no Redis. Chaves com TTL expiram automaticamente. Use TTL para gerenciar crescimento do dataset."
+            loading={isLoading}
+          />
+        </Grid>
+
+        <Grid item xs={12} sm={6} md={3}>
+          <MetricCard
+            title="Uptime"
+            value={metrics ? formatUptime(metrics.server.uptime) : '-'}
+            subtitle={metrics ? `${metrics.server.uptimeDays} dias` : '-'}
+            icon={<AccessTimeIcon />}
+            color="info"
+            tooltip="Tempo desde o último restart do Redis. Uptime alto é bom, mas fragmentação de memória pode exigir restart periódico."
+            loading={isLoading}
+          />
+        </Grid>
+
+        <Grid item xs={12} sm={6} md={3}>
+          <MetricCard
+            title="Replication"
+            value={metrics ? metrics.replication.role : '-'}
+            subtitle={
+              metrics?.replication?.connectedSlaves
+                ? `${metrics.replication.connectedSlaves} replica${metrics.replication.connectedSlaves > 1 ? 's' : ''}`
+                : 'Standalone'
+            }
+            icon={<SyncIcon />}
+            color={metrics?.replication?.syncPartialErr ? 'warning' : 'info'}
+            tooltip="Status de replicação. Master/Slave ou Standalone. Erros de sync parcial indicam problemas de replicação."
+            loading={isLoading}
+          />
+        </Grid>
+      </Grid>
+
+      {/* Server Info */}
+      {metrics && (
+        <Box mt={4} p={2} bgcolor="background.paper" borderRadius={1}>
+          <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+            Server Info
+          </Typography>
+          <Typography variant="caption" color="text.secondary">
+            Redis {metrics.server.version} • {metrics.server.mode} • {metrics.server.os} • PID: {metrics.server.processId}
+          </Typography>
+        </Box>
+      )}
+
+      {/* Error Modal */}
+      <ErrorModal
+        open={errorModal.open}
+        message={errorModal.message}
+        details={errorModal.details}
+        onClose={closeErrorModal}
+      />
     </Box>
   );
 };

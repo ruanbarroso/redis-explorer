@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { redisService } from '@/services/redis';
+import { getRedisFromSession } from '@/lib/session-helper';
 
 export async function POST(request: NextRequest) {
   try {
@@ -12,7 +12,19 @@ export async function POST(request: NextRequest) {
       );
     }
     
-    const result = await redisService.executeCommand(command);
+    // Get Redis from session
+    const redis = await getRedisFromSession();
+    if (!redis) {
+      return NextResponse.json(
+        { error: 'No active Redis connection for this session' },
+        { status: 503 }
+      );
+    }
+    
+    // Parse command string into array
+    const args = command.trim().split(/\s+/);
+    const result = await redis.call(...args);
+    
     return NextResponse.json({ result });
   } catch (error) {
     return NextResponse.json(

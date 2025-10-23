@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { redisService } from '@/services/redis';
+import { getRedisFromSession, getSessionId } from '@/lib/session-helper';
+import { sessionManager } from '@/services/session-manager';
 
 export async function POST(request: NextRequest) {
   try {

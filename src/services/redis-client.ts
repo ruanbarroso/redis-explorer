@@ -154,7 +154,7 @@ class RedisClientService {
           'Content-Type': 'application/json',
         },
         credentials: 'include',
-        signal: AbortSignal.timeout(10000), // 10 seconds timeout
+        signal: AbortSignal.timeout(20000), // 20 seconds timeout
       });
       
       if (!response.ok) {

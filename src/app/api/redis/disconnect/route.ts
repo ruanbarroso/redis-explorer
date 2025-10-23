@@ -1,10 +1,15 @@
 import { NextResponse } from 'next/server';
-import { redisService } from '@/services/redis';
+import { getSessionId } from '@/lib/session-helper';
+import { sessionManager } from '@/services/session-manager';
 
 export async function POST() {
   try {
-    // For now, we'll just return success since we don't have session management
-    // In a real app, you'd want to track connections per session
+    const sessionId = await getSessionId();
+    if (!sessionId) {
+      return NextResponse.json({ success: false, error: 'No session found' });
+    }
+    
+    await sessionManager.disconnect(sessionId);
     return NextResponse.json({ success: true });
   } catch (error) {
     return NextResponse.json(

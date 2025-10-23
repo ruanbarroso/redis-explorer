@@ -1,13 +1,21 @@
 import { NextResponse } from 'next/server';
-import { redisService } from '@/services/redis';
+import { getRedisFromSession } from '@/lib/session-helper';
 
 export async function GET() {
   try {
-    const success = await redisService.ping();
-    return NextResponse.json({ success });
+    const redis = await getRedisFromSession();
+    if (!redis) {
+      return NextResponse.json(
+        { error: 'No active Redis connection for this session' },
+        { status: 503 }
+      );
+    }
+    
+    const pong = await redis.ping();
+    return NextResponse.json({ pong });
   } catch (error) {
     return NextResponse.json(
-      { success: false, error: String(error) },
+      { error: String(error) },
       { status: 500 }
     );
   }

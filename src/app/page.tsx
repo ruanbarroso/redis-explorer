@@ -26,6 +26,7 @@ import {
 import { useSelector } from 'react-redux';
 import { RootState } from '@/store';
 import { useAuthWithModals } from '@/hooks/useAuthWithModals';
+import { useCrossTabSync } from '@/hooks/useCrossTabSync';
 import LoadingScreen from '@/components/LoadingScreen';
 import PasswordSetup from '@/components/PasswordSetup';
 import LoginForm from '@/components/LoginForm';
@@ -45,7 +46,7 @@ type AppState = 'connection-selection' | 'main-app';
 
 export default function Home() {
   const theme = useTheme();
-  const [activeTab, setActiveTab] = useState<TabType>('browser');
+  const [activeTab, setActiveTab] = useState<TabType>('dashboard');
   const [appState, setAppState] = useState<AppState>('connection-selection');
   const [mobileOpen, setMobileOpen] = useState(false);
   const [connectionDialogOpen, setConnectionDialogOpen] = useState(false);
@@ -65,6 +66,9 @@ export default function Home() {
     closeLogoutDialog,
     closeChangePasswordDialog
   } = useAuthWithModals();
+
+  // Sincronizar mudanças de conexão entre abas
+  useCrossTabSync();
 
   // Debug: Monitor authentication state changes
   useEffect(() => {
@@ -104,7 +108,7 @@ export default function Home() {
 
   const handleConnectionSuccess = (connection: RedisConnection) => {
     setAppState('main-app');
-    setActiveTab('browser');
+    setActiveTab('dashboard');
   };
 
   const handleManageConnections = () => {
@@ -112,8 +116,8 @@ export default function Home() {
   };
 
   const menuItems = [
-    { id: 'browser', label: 'Keys Browser', icon: <StorageIcon /> },
     { id: 'dashboard', label: 'Dashboard', icon: <DashboardIcon /> },
+    { id: 'browser', label: 'Keys Browser', icon: <StorageIcon /> },
     { id: 'terminal', label: 'CLI', icon: <TerminalIcon /> },
   ];
 
@@ -175,14 +179,14 @@ export default function Home() {
       }
 
       switch (activeTab) {
-        case 'browser':
-          return <KeysBrowser />;
         case 'dashboard':
           return <Dashboard />;
+        case 'browser':
+          return <KeysBrowser />;
         case 'terminal':
           return <Terminal />;
         default:
-          return <KeysBrowser />;
+          return <Dashboard />;
       }
     };
 
@@ -190,7 +194,7 @@ export default function Home() {
       <Box>
         <Toolbar>
           <Box display="flex" alignItems="center" gap={1}>
-            <StorageIcon sx={{ color: theme.palette.primary.main }} />
+            <DashboardIcon sx={{ color: theme.palette.primary.main }} />
             <Typography variant="h6" noWrap component="div">
               Redis Explorer
             </Typography>
@@ -269,6 +273,7 @@ export default function Home() {
 
             {/* Connection Switcher */}
             <ConnectionSwitcher
+              key={activeConnection?.id || 'no-connection'}
               onManageConnections={handleManageConnections}
             />
           </Toolbar>

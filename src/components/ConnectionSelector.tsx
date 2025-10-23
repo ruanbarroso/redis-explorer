@@ -95,6 +95,11 @@ const ConnectionSelector = ({ onConnectionSuccess }: ConnectionSelectorProps) =>
     connectionName?: string;
   }>({ open: false });
   const [clearAllDialog, setClearAllDialog] = useState(false);
+  const [loadingTimeout, setLoadingTimeout] = useState(false);
+  const [loadingError, setLoadingError] = useState<{ open: boolean; message: string }>({
+    open: false,
+    message: ''
+  });
 
   // Garantir que o componente só renderiza no cliente
   useEffect(() => {
@@ -102,22 +107,30 @@ const ConnectionSelector = ({ onConnectionSuccess }: ConnectionSelectorProps) =>
   }, []);
 
   useEffect(() => {
-    if (isHydrated && isAuthenticated && !hasLoadedOnce) {
-      const timeoutId = setTimeout(() => {
-        dispatch(loadConnections()).then(() => {
+    // Remover isAuthenticated da condição - na tela de conexões já passou pelo login
+    if (isHydrated && !hasLoadedOnce) {
+      const timeoutId = setTimeout(async () => {
+        try {
+          // unwrap() força o erro a ser lançado se o thunk for rejeitado
+          await dispatch(loadConnections()).unwrap();
+          
           dispatch(migrateFromLocalStorage()).catch(error => {
             console.warn('Migration failed:', error);
           });
           setHasLoadedOnce(true);
-        }).catch(error => {
+        } catch (error: any) {
           console.error('Failed to load connections:', error);
+          setLoadingError({
+            open: true,
+            message: 'Erro ao carregar conexões: ' + (error.message || error || 'Servidor indisponível')
+          });
           setHasLoadedOnce(true);
-        });
+        }
       }, 100);
 
       return () => clearTimeout(timeoutId);
     }
-  }, [dispatch, isHydrated, isAuthenticated, hasLoadedOnce]);
+  }, [dispatch, isHydrated, hasLoadedOnce]);
 
   // Check if there's an active connection after loading and redirect if needed
   useEffect(() => {
@@ -460,12 +473,6 @@ const ConnectionSelector = ({ onConnectionSuccess }: ConnectionSelectorProps) =>
 
           {/* Área de conteúdo com scroll */}
           <Box sx={{ flexGrow: 1, overflow: 'auto' }}>
-            {error && (
-              <Alert severity="error" sx={{ mb: 3 }}>
-                {error}
-              </Alert>
-            )}
-
             {/* Connections Grid */}
           {!hasLoadedOnce ? (
             <Box textAlign="center" py={6}>
@@ -670,6 +677,40 @@ const ConnectionSelector = ({ onConnectionSuccess }: ConnectionSelectorProps) =>
         alertSeverity="warning"
         description="Todas as configurações desta conexão serão permanentemente removidas."
       />
+
+      {/* Loading Error Dialog */}
+      <Dialog open={loadingError.open} maxWidth="sm" fullWidth>
+        <DialogTitle>
+          <Box display="flex" alignItems="center" gap={1}>
+            <WifiIcon color="error" />
+            <Typography variant="h6">Erro ao Carregar Conexões</Typography>
+          </Box>
+        </DialogTitle>
+        <DialogContent>
+          <Alert severity="error" sx={{ mb: 2 }}>
+            {loadingError.message}
+          </Alert>
+          <DialogContentText>
+            O servidor pode estar temporariamente indisponível. Você pode tentar novamente ou sair do sistema.
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={showLogoutConfirmation} color="error">
+            Sair do Sistema
+          </Button>
+          <Button 
+            onClick={() => {
+              setLoadingError({ open: false, message: '' });
+              setHasLoadedOnce(false);
+              setLoadingTimeout(false);
+            }} 
+            variant="contained" 
+            color="primary"
+          >
+            Tentar Novamente
+          </Button>
+        </DialogActions>
+      </Dialog>
 
       {/* Clear All Connections Dialog */}
       <ConfirmationDialog

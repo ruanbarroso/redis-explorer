@@ -116,6 +116,20 @@ export const connectToRedis = createAsyncThunk(
       await redisClientService.disconnect();
     }
     
+    // Conectar usando o novo endpoint de sessão
+    const response = await fetch('/api/redis/connect-session', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(connection),
+      credentials: 'include', // Importante para enviar cookies
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || 'Failed to connect');
+    }
+
+    // Também conectar no redisClientService (para keys browser e terminal)
     const success = await redisClientService.connect(connection);
     if (!success) {
       throw new Error(`Não foi possível conectar ao Redis em ${connection.host}:${connection.port}. Verifique se o servidor está rodando e as credenciais estão corretas.`);

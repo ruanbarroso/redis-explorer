@@ -172,24 +172,6 @@ const LoadingProgressModal = ({
               {progress}%
             </Typography>
           </Box>
-
-          {/* Warning for large datasets */}
-          {total > 50000 && phase === 'processing' && (
-            <Box
-              sx={{
-                p: 2,
-                backgroundColor: 'warning.light',
-                borderRadius: 1,
-                mb: 2,
-              }}
-            >
-              <Typography variant="body2" color="warning.dark">
-                ⚠️ <strong>Grande volume de dados detectado!</strong>
-                <br />
-                {total.toLocaleString()} chaves encontradas. Este processo pode levar vários minutos.
-              </Typography>
-            </Box>
-          )}
         </Box>
       </DialogContent>
 

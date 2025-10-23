@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { redisService } from '@/services/redis';
+import { getRedisFromSession } from '@/lib/session-helper';
 
 export async function GET(request: NextRequest) {
   try {
@@ -13,9 +13,39 @@ export async function GET(request: NextRequest) {
       );
     }
     
-    const value = await redisService.getValue(key);
+    const redis = await getRedisFromSession();
+    if (!redis) {
+      return NextResponse.json(
+        { error: 'No active Redis connection for this session' },
+        { status: 503 }
+      );
+    }
     
-    return NextResponse.json({ value });
+    // Get type first
+    const type = await redis.type(key);
+    let value: any;
+    
+    switch (type) {
+      case 'string':
+        value = await redis.get(key);
+        break;
+      case 'hash':
+        value = await redis.hgetall(key);
+        break;
+      case 'list':
+        value = await redis.lrange(key, 0, -1);
+        break;
+      case 'set':
+        value = await redis.smembers(key);
+        break;
+      case 'zset':
+        value = await redis.zrange(key, 0, -1, 'WITHSCORES');
+        break;
+      default:
+        value = null;
+    }
+    
+    return NextResponse.json({ value, type });
   } catch (error) {
     return NextResponse.json(
       { error: String(error) },
@@ -28,9 +58,55 @@ export async function PUT(request: NextRequest) {
   try {
     const { key, value, type, ttl } = await request.json();
     
-    const success = await redisService.setValue(key, value, type, ttl);
+    const redis = await getRedisFromSession();
+    if (!redis) {
+      return NextResponse.json(
+        { error: 'No active Redis connection for this session' },
+        { status: 503 }
+      );
+    }
     
-    return NextResponse.json({ success });
+    // Set value based on type
+    switch (type) {
+      case 'string':
+        if (ttl && ttl > 0) {
+          await redis.setex(key, ttl, value);
+        } else {
+          await redis.set(key, value);
+        }
+        break;
+      case 'hash':
+        await redis.del(key);
+        if (typeof value === 'object') {
+          await redis.hset(key, value);
+        }
+        break;
+      case 'list':
+        await redis.del(key);
+        if (Array.isArray(value)) {
+          await redis.rpush(key, ...value);
+        }
+        break;
+      case 'set':
+        await redis.del(key);
+        if (Array.isArray(value)) {
+          await redis.sadd(key, ...value);
+        }
+        break;
+      case 'zset':
+        await redis.del(key);
+        if (Array.isArray(value)) {
+          await redis.zadd(key, ...value);
+        }
+        break;
+    }
+    
+    // Set TTL if provided
+    if (ttl && ttl > 0 && type !== 'string') {
+      await redis.expire(key, ttl);
+    }
+    
+    return NextResponse.json({ success: true });
   } catch (error) {
     return NextResponse.json(
       { error: String(error) },

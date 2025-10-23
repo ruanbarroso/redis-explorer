@@ -125,6 +125,9 @@ export interface RedisStats {
   // CPU Percentage (calculated)
   usedCpuSysPercent?: number;
   usedCpuUserPercent?: number;
+  instantaneousCpuPercent?: number; // Real-time CPU usage
+  clientRttP50?: number; // Client RTT P50 latency
+  clientRttP95?: number; // Client RTT P95 latency
   
   // Replication Advanced
   role?: string;
