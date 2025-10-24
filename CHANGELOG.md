@@ -1,3 +1,9 @@
+## [1.10.3](https://github.com/ruanbarroso/redis-explorer/compare/v1.10.2...v1.10.3) (2025-10-24)
+
+### 🐛 Bug Fixes
+
+* Remove reconexão automática e volta comportamento original ([731c08e](https://github.com/ruanbarroso/redis-explorer/commit/731c08e952970919b9651f85f5fbf7aeb270e499))
+
 ## [1.10.2](https://github.com/ruanbarroso/redis-explorer/compare/v1.10.1...v1.10.2) (2025-10-24)
 
 ### 🐛 Bug Fixes
