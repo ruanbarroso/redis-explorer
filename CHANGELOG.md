@@ -1,3 +1,9 @@
+## [1.10.2](https://github.com/ruanbarroso/redis-explorer/compare/v1.10.1...v1.10.2) (2025-10-24)
+
+### 🐛 Bug Fixes
+
+* Corrige loop infinito na reconexão do Dashboard ([fc407ba](https://github.com/ruanbarroso/redis-explorer/commit/fc407badbb1dca8c9f467a899c10da3333712728))
+
 ## [1.10.1](https://github.com/ruanbarroso/redis-explorer/compare/v1.10.0...v1.10.1) (2025-10-24)
 
 ### 🐛 Bug Fixes
