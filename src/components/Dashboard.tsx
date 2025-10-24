@@ -51,7 +51,25 @@ const Dashboard = () => {
         if (response.status === 503) {
           console.error('Redis connection unavailable (503), attempting reconnection...');
           await handleConnectionError(true); // Tentar reconectar
-          return false;
+          
+          // Aguardar um pouco e tentar novamente após reconexão
+          await new Promise(resolve => setTimeout(resolve, 1000));
+          
+          // Tentar buscar métricas novamente após reconexão
+          const retryResponse = await fetch('/api/redis/metrics', {
+            credentials: 'include',
+          });
+          
+          if (retryResponse.ok) {
+            const retryData = await retryResponse.json();
+            if (!retryData.error) {
+              setMetrics(retryData.metrics);
+              setError(null);
+              return true; // Reconexão bem-sucedida
+            }
+          }
+          
+          return false; // Reconexão falhou
         }
         throw new Error(`HTTP ${response.status}: Failed to fetch metrics`);
       }
@@ -62,7 +80,25 @@ const Dashboard = () => {
       if (data.error) {
         console.error('Redis error in response:', data.error);
         await handleConnectionError(true); // Tentar reconectar
-        return false;
+        
+        // Aguardar um pouco e tentar novamente após reconexão
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        
+        // Tentar buscar métricas novamente após reconexão
+        const retryResponse = await fetch('/api/redis/metrics', {
+          credentials: 'include',
+        });
+        
+        if (retryResponse.ok) {
+          const retryData = await retryResponse.json();
+          if (!retryData.error) {
+            setMetrics(retryData.metrics);
+            setError(null);
+            return true; // Reconexão bem-sucedida
+          }
+        }
+        
+        return false; // Reconexão falhou
       }
 
       setMetrics(data.metrics);
@@ -98,23 +134,11 @@ const Dashboard = () => {
         // Fazer primeira chamada sempre
         const success = await fetchMetrics();
         
-        // Se falhou na primeira tentativa
+        // Se falhou, desligar auto-refresh e parar
         if (!success) {
-          // Se está reconectando, aguardar 2 segundos e tentar novamente
-          if (isReconnecting) {
-            console.log('⏳ Aguardando reconexão...');
-            await new Promise(resolve => setTimeout(resolve, 2000));
-            const retrySuccess = await fetchMetrics();
-            if (!retrySuccess) {
-              console.error('❌ Falha ao buscar métricas após reconexão, desligando auto-refresh');
-              setAutoRefresh(false);
-              return;
-            }
-          } else {
-            console.error('❌ Falha ao buscar métricas, desligando auto-refresh');
-            setAutoRefresh(false);
-            return;
-          }
+          console.error('❌ Falha ao buscar métricas, desligando auto-refresh');
+          setAutoRefresh(false);
+          return;
         }
         
         // Se auto-refresh está desligado, parar aqui
@@ -156,7 +180,7 @@ const Dashboard = () => {
       setMetrics(null);
       setError(null);
     }
-  }, [activeConnection?.id, autoRefresh, isReconnecting]);
+  }, [activeConnection?.id, autoRefresh]);
 
   const formatNumber = (num: number) => {
     return new Intl.NumberFormat().format(num);
