@@ -1,3 +1,9 @@
+## [1.14.0](https://github.com/ruanbarroso/redis-explorer/compare/v1.13.0...v1.14.0) (2025-10-24)
+
+### 🚀 Features
+
+* melhora UX do TTL no ValueEditor ([9c6ed59](https://github.com/ruanbarroso/redis-explorer/commit/9c6ed59c993bb5793971af7259c1b88644df9517))
+
 ## [1.13.0](https://github.com/ruanbarroso/redis-explorer/compare/v1.12.0...v1.13.0) (2025-10-24)
 
 ### 🚀 Features
