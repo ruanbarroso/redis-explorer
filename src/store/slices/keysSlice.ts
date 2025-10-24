@@ -173,6 +173,35 @@ const keysSlice = createSlice({
         fileName: null,
       };
     },
+    decrementTTLs: (state) => {
+      // Decrementa TTL de todas as chaves, exceto as que têm -1 (no expiry)
+      state.keys = state.keys.map(key => {
+        if (key.ttl > 0) {
+          return { ...key, ttl: key.ttl - 1 };
+        }
+        return key;
+      });
+    },
+    removeExpiredKeys: (state) => {
+      // Remove chaves que expiraram (TTL chegou a 0)
+      const beforeCount = state.keys.length;
+      state.keys = state.keys.filter(key => key.ttl !== 0);
+      const afterCount = state.keys.length;
+      
+      // Se a chave selecionada foi removida, limpa a seleção
+      if (beforeCount !== afterCount && state.selectedKey) {
+        const keyStillExists = state.keys.some(k => k.name === state.selectedKey);
+        if (!keyStillExists) {
+          state.selectedKey = null;
+          state.selectedValue = null;
+        }
+      }
+      
+      // Atualiza o total de chaves
+      if (state.totalKeys !== null && beforeCount !== afterCount) {
+        state.totalKeys = afterCount;
+      }
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -226,7 +255,7 @@ const keysSlice = createSlice({
   },
 });
 
-export const { setSearchPattern, setSelectedKey, clearKeys, clearError, setLoadingProgress, resetLoadingProgress, setKeys, setTotalKeys, setLoadedKeysJson, clearLoadedKeysJson } =
+export const { setSearchPattern, setSelectedKey, clearKeys, clearError, setLoadingProgress, resetLoadingProgress, setKeys, setTotalKeys, setLoadedKeysJson, clearLoadedKeysJson, decrementTTLs, removeExpiredKeys } =
   keysSlice.actions;
 
 export default keysSlice.reducer;

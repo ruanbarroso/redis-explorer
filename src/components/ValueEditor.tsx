@@ -55,7 +55,8 @@ const ValueEditor = ({ keyName, value, onSave, onDelete }: ValueEditorProps) => 
   // Detectar se é uma chave nova (não existe)
   const isNewKey = value.value === null && value.type === 'none';
   const [editedValue, setEditedValue] = useState<any>(isNewKey ? '' : value.value);
-  const [ttl, setTtl] = useState<number>(value.ttl > 0 ? value.ttl : -1);
+  const [ttl, setTtl] = useState<number>(value.ttl);
+  const [isEditingTTL, setIsEditingTTL] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [newField, setNewField] = useState({ key: '', value: '' });
   const [error, setError] = useState<string | null>(null);
@@ -71,7 +72,8 @@ const ValueEditor = ({ keyName, value, onSave, onDelete }: ValueEditorProps) => 
   useEffect(() => {
     const isNew = value.value === null && value.type === 'none';
     setEditedValue(isNew ? '' : value.value);
-    setTtl(value.ttl > 0 ? value.ttl : -1);
+    setTtl(value.ttl);
+    setIsEditingTTL(false);
     setHasChanges(isNew);
     setError(null);
   }, [value]);
@@ -197,13 +199,37 @@ const ValueEditor = ({ keyName, value, onSave, onDelete }: ValueEditorProps) => 
                 TTL:
               </Typography>
             </Tooltip>
-            <TextField
-              type="number"
-              value={ttl}
-              onChange={(e) => setTtl(parseInt(e.target.value))}
-              size="small"
-              sx={{ width: 100 }}
-            />
+            {isEditingTTL ? (
+              <TextField
+                type="number"
+                value={ttl}
+                onChange={(e) => {
+                  const val = parseInt(e.target.value);
+                  setTtl(isNaN(val) ? -1 : val);
+                }}
+                onBlur={() => setIsEditingTTL(false)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    setIsEditingTTL(false);
+                  }
+                }}
+                size="small"
+                autoFocus
+                sx={{ width: 100 }}
+              />
+            ) : (
+              <Chip
+                label={formatTTL(ttl)}
+                size="small"
+                onClick={() => setIsEditingTTL(true)}
+                sx={{ 
+                  cursor: 'pointer',
+                  '&:hover': {
+                    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                  },
+                }}
+              />
+            )}
           </Box>
         </Box>
         
@@ -238,13 +264,34 @@ const ValueEditor = ({ keyName, value, onSave, onDelete }: ValueEditorProps) => 
               TTL:
             </Typography>
           </Tooltip>
-          <TextField
-            type="number"
-            value={ttl}
-            onChange={(e) => setTtl(parseInt(e.target.value))}
-            size="small"
-            sx={{ width: 100 }}
-          />
+          {isEditingTTL ? (
+            <TextField
+              type="number"
+              value={ttl}
+              onChange={(e) => setTtl(parseInt(e.target.value))}
+              onBlur={() => setIsEditingTTL(false)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  setIsEditingTTL(false);
+                }
+              }}
+              size="small"
+              autoFocus
+              sx={{ width: 100 }}
+            />
+          ) : (
+            <Chip
+              label={formatTTL(ttl)}
+              size="small"
+              onClick={() => setIsEditingTTL(true)}
+              sx={{ 
+                cursor: 'pointer',
+                '&:hover': {
+                  backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                },
+              }}
+            />
+          )}
           {hasChanges ? (
             <>
               <Button 
@@ -343,13 +390,34 @@ const ValueEditor = ({ keyName, value, onSave, onDelete }: ValueEditorProps) => 
               TTL:
             </Typography>
           </Tooltip>
-          <TextField
-            type="number"
-            value={ttl}
-            onChange={(e) => setTtl(parseInt(e.target.value))}
-            size="small"
-            sx={{ width: 100 }}
-          />
+          {isEditingTTL ? (
+            <TextField
+              type="number"
+              value={ttl}
+              onChange={(e) => setTtl(parseInt(e.target.value))}
+              onBlur={() => setIsEditingTTL(false)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  setIsEditingTTL(false);
+                }
+              }}
+              size="small"
+              autoFocus
+              sx={{ width: 100 }}
+            />
+          ) : (
+            <Chip
+              label={formatTTL(ttl)}
+              size="small"
+              onClick={() => setIsEditingTTL(true)}
+              sx={{ 
+                cursor: 'pointer',
+                '&:hover': {
+                  backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                },
+              }}
+            />
+          )}
           {hasChanges ? (
             <>
               <Button 
@@ -447,13 +515,34 @@ const ValueEditor = ({ keyName, value, onSave, onDelete }: ValueEditorProps) => 
               TTL:
             </Typography>
           </Tooltip>
-          <TextField
-            type="number"
-            value={ttl}
-            onChange={(e) => setTtl(parseInt(e.target.value))}
-            size="small"
-            sx={{ width: 100 }}
-          />
+          {isEditingTTL ? (
+            <TextField
+              type="number"
+              value={ttl}
+              onChange={(e) => setTtl(parseInt(e.target.value))}
+              onBlur={() => setIsEditingTTL(false)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  setIsEditingTTL(false);
+                }
+              }}
+              size="small"
+              autoFocus
+              sx={{ width: 100 }}
+            />
+          ) : (
+            <Chip
+              label={formatTTL(ttl)}
+              size="small"
+              onClick={() => setIsEditingTTL(true)}
+              sx={{ 
+                cursor: 'pointer',
+                '&:hover': {
+                  backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                },
+              }}
+            />
+          )}
           {hasChanges ? (
             <>
               <Button 

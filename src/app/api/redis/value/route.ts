@@ -45,7 +45,20 @@ export async function GET(request: NextRequest) {
         value = null;
     }
     
-    return NextResponse.json({ value, type });
+    // Get TTL
+    const ttl = await redis.ttl(key);
+    
+    // Get size (memory usage)
+    let size = 0;
+    try {
+      const memoryUsage = await redis.memory('USAGE', key);
+      size = memoryUsage || 0;
+    } catch (e) {
+      // Memory command might not be available
+      size = JSON.stringify(value).length;
+    }
+    
+    return NextResponse.json({ value, type, ttl, size });
   } catch (error) {
     return NextResponse.json(
       { error: String(error) },

@@ -64,6 +64,7 @@ import { useLoadAllKeysWithProgress } from '@/hooks/useLoadAllKeysWithProgress';
 import { useLoadAllKeysWithPolling } from '@/hooks/useLoadAllKeysWithPolling';
 import { useSimplePolling } from '@/hooks/useSimplePolling';
 import { useConnectionErrorHandler } from '@/hooks/useConnectionErrorHandler';
+import { useTTLCountdown } from '@/hooks/useTTLCountdown';
 import ErrorModal from './ErrorModal';
 import LoadingProgressModal from './LoadingProgressModal';
 import VirtualizedKeysList from './VirtualizedKeysList';
@@ -105,6 +106,9 @@ const KeysBrowser = () => {
   const { loadAllKeysWithPolling, cancelLoadAllKeys: cancelPolling } = useLoadAllKeysWithPolling();
   const { loadAllKeysSimple, cancelSimple } = useSimplePolling();
   const { handleFetchError, errorModal, closeErrorModal } = useConnectionErrorHandler();
+  
+  // TTL Countdown - ativa apenas quando há conexão ativa
+  useTTLCountdown(!!activeConnection?.connected);
   
   // Ref para evitar chamadas duplicadas
   const lastConnectionIdRef = useRef<string | null>(null);
