@@ -1,3 +1,9 @@
+## [1.15.0](https://github.com/ruanbarroso/redis-explorer/compare/v1.14.0...v1.15.0) (2025-10-24)
+
+### 🚀 Features
+
+* implementa remoção de pasta com endpoint otimizado ([62b7711](https://github.com/ruanbarroso/redis-explorer/commit/62b771106a5f23c3f31479f3d15b5dd2f208f94d))
+
 ## [1.14.0](https://github.com/ruanbarroso/redis-explorer/compare/v1.13.0...v1.14.0) (2025-10-24)
 
 ### 🚀 Features
