@@ -56,7 +56,9 @@ const ValueEditor = ({ keyName, value, onSave, onDelete }: ValueEditorProps) => 
   const isNewKey = value.value === null && value.type === 'none';
   const [editedValue, setEditedValue] = useState<any>(isNewKey ? '' : value.value);
   const [ttl, setTtl] = useState<number>(value.ttl);
+  const [ttlInput, setTtlInput] = useState<string>(value.ttl === -1 ? '' : String(value.ttl));
   const [isEditingTTL, setIsEditingTTL] = useState(false);
+  const [manualTtlChange, setManualTtlChange] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [newField, setNewField] = useState({ key: '', value: '' });
   const [error, setError] = useState<string | null>(null);
@@ -72,17 +74,56 @@ const ValueEditor = ({ keyName, value, onSave, onDelete }: ValueEditorProps) => 
   useEffect(() => {
     const isNew = value.value === null && value.type === 'none';
     setEditedValue(isNew ? '' : value.value);
-    setTtl(value.ttl);
+    // TTL -2 significa chave não existe (nova), tratar como -1 (no expiry)
+    const normalizedTtl = value.ttl === -2 ? -1 : value.ttl;
+    setTtl(normalizedTtl);
+    setTtlInput(normalizedTtl === -1 ? '' : String(normalizedTtl));
     setIsEditingTTL(false);
+    setManualTtlChange(false);
     setHasChanges(isNew);
     setError(null);
   }, [value]);
 
   useEffect(() => {
     const valueChanged = JSON.stringify(editedValue) !== JSON.stringify(value.value);
-    const ttlChanged = ttl !== (value.ttl > 0 ? value.ttl : -1);
-    setHasChanges(valueChanged || ttlChanged);
-  }, [editedValue, ttl, value]);
+    // Considera mudança de TTL se foi alterado manualmente
+    setHasChanges(valueChanged || manualTtlChange);
+  }, [editedValue, manualTtlChange, value]);
+
+  // TTL Countdown - decrementa a cada segundo
+  useEffect(() => {
+    // Não decrementa se:
+    // - Está editando o TTL
+    // - Está em estado de edição (hasChanges)
+    // - TTL é -1 (no expiry)
+    // - TTL já é 0
+    if (isEditingTTL || hasChanges || ttl === -1 || ttl <= 0) {
+      return;
+    }
+
+    const interval = setInterval(() => {
+      setTtl((prevTtl) => {
+        const newTtl = prevTtl - 1;
+        
+        // Atualiza o input também
+        if (newTtl === 0) {
+          // TTL chegou a zero - chave expirou
+          setTtlInput('');
+          // Limpa o valor para simular chave nova
+          setEditedValue('');
+          setHasChanges(true);
+          return -1; // Marca como "no expiry" para nova chave
+        } else if (newTtl > 0) {
+          setTtlInput(String(newTtl));
+          return newTtl;
+        }
+        
+        return prevTtl;
+      });
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [ttl, isEditingTTL, hasChanges]);
 
   const handleSave = async () => {
     try {
@@ -106,7 +147,11 @@ const ValueEditor = ({ keyName, value, onSave, onDelete }: ValueEditorProps) => 
 
   const handleCancel = () => {
     setEditedValue(value.value);
-    setTtl(value.ttl > 0 ? value.ttl : -1);
+    // TTL -2 significa chave não existe (nova), tratar como -1 (no expiry)
+    const normalizedTtl = value.ttl === -2 ? -1 : value.ttl;
+    setTtl(normalizedTtl);
+    setTtlInput(normalizedTtl === -1 ? '' : String(normalizedTtl));
+    setManualTtlChange(false);
     setHasChanges(false);
     setError(null);
   };
@@ -202,10 +247,15 @@ const ValueEditor = ({ keyName, value, onSave, onDelete }: ValueEditorProps) => 
             {isEditingTTL ? (
               <TextField
                 type="number"
-                value={ttl}
+                value={ttlInput}
                 onChange={(e) => {
-                  const val = parseInt(e.target.value);
-                  setTtl(isNaN(val) ? -1 : val);
+                  const val = e.target.value;
+                  // Permite vazio ou apenas números positivos
+                  if (val === '' || (parseInt(val) > 0 && !isNaN(parseInt(val)))) {
+                    setTtlInput(val);
+                    setTtl(val === '' ? -1 : parseInt(val));
+                    setManualTtlChange(true);
+                  }
                 }}
                 onBlur={() => setIsEditingTTL(false)}
                 onKeyDown={(e) => {
@@ -215,7 +265,8 @@ const ValueEditor = ({ keyName, value, onSave, onDelete }: ValueEditorProps) => 
                 }}
                 size="small"
                 autoFocus
-                sx={{ width: 100 }}
+                placeholder="No expiry"
+                sx={{ width: 120 }}
               />
             ) : (
               <Chip
