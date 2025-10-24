@@ -1,3 +1,9 @@
+## [1.11.0](https://github.com/ruanbarroso/redis-explorer/compare/v1.10.3...v1.11.0) (2025-10-24)
+
+### 🚀 Features
+
+* Implementa tela de Alertas e refatora Dashboard com Context API ([9278a69](https://github.com/ruanbarroso/redis-explorer/commit/9278a6987f412d59230919400a9f0311b3506553))
+
 ## [1.10.3](https://github.com/ruanbarroso/redis-explorer/compare/v1.10.2...v1.10.3) (2025-10-24)
 
 ### 🐛 Bug Fixes
