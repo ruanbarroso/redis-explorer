@@ -1,3 +1,9 @@
+## [1.10.1](https://github.com/ruanbarroso/redis-explorer/compare/v1.10.0...v1.10.1) (2025-10-24)
+
+### 🐛 Bug Fixes
+
+* Implementa reconexão automática quando sessão Redis expira ([ba2cb9b](https://github.com/ruanbarroso/redis-explorer/commit/ba2cb9b6e1d12d89f6e843b137e0a690d0bc1b14))
+
 ## [1.10.0](https://github.com/ruanbarroso/redis-explorer/compare/v1.9.1...v1.10.0) (2025-10-23)
 
 ### 🚀 Features
