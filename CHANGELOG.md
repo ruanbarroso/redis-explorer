@@ -1,3 +1,9 @@
+## [1.12.0](https://github.com/ruanbarroso/redis-explorer/compare/v1.11.0...v1.12.0) (2025-10-24)
+
+### 🚀 Features
+
+* melhorias na modal de download de chaves e correção de hydration mismatch ([14b383b](https://github.com/ruanbarroso/redis-explorer/commit/14b383be2528ddfc59281199c2de34d6da8a4f38))
+
 ## [1.11.0](https://github.com/ruanbarroso/redis-explorer/compare/v1.10.3...v1.11.0) (2025-10-24)
 
 ### 🚀 Features
