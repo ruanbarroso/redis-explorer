@@ -11,11 +11,15 @@ import {
   Button,
   CircularProgress,
   IconButton,
+  TextField,
 } from '@mui/material';
 import {
   Close as CloseIcon,
   Cancel as CancelIcon,
+  ContentCopy as CopyIcon,
+  Download as DownloadIcon,
 } from '@mui/icons-material';
+import { useState } from 'react';
 
 interface LoadingProgressModalProps {
   open: boolean;
@@ -25,6 +29,8 @@ interface LoadingProgressModalProps {
   total: number;
   current: number;
   startTime?: number;
+  jsonData?: string | null;
+  fileName?: string | null;
   onCancel: () => void;
 }
 
@@ -36,8 +42,36 @@ const LoadingProgressModal = ({
   total,
   current,
   startTime,
+  jsonData,
+  fileName,
   onCancel,
 }: LoadingProgressModalProps) => {
+  const [copySuccess, setCopySuccess] = useState(false);
+
+  const handleCopy = async () => {
+    if (jsonData) {
+      try {
+        await navigator.clipboard.writeText(jsonData);
+        setCopySuccess(true);
+        setTimeout(() => setCopySuccess(false), 2000);
+      } catch (err) {
+        console.error('Failed to copy:', err);
+      }
+    }
+  };
+
+  const handleDownload = () => {
+    if (jsonData && fileName) {
+      const blob = new Blob([jsonData], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = fileName;
+      link.click();
+      URL.revokeObjectURL(url);
+    }
+  };
+
   const getPhaseTitle = (phase: string) => {
     switch (phase) {
       case 'starting':
@@ -47,7 +81,7 @@ const LoadingProgressModal = ({
       case 'processing':
         return '⚙️ Processando Dados';
       case 'completing':
-        return '✨ Finalizando';
+        return jsonData ? '✅ Concluído' : '✨ Preparando arquivo...';
       case 'complete':
         return '✅ Concluído';
       default:
@@ -59,7 +93,7 @@ const LoadingProgressModal = ({
     return '#4caf50'; // Always green - clean and professional
   };
 
-  const isComplete = phase === 'complete';
+  const isComplete = phase === 'complete' || (phase === 'completing' && jsonData);
   const canCancel = !isComplete;
 
   return (
@@ -85,10 +119,33 @@ const LoadingProgressModal = ({
 
       <DialogContent>
         <Box sx={{ width: '100%' }}>
-          {/* Main Message */}
-          <Box display="flex" alignItems="center" gap={2} mb={3}>
-            <Typography variant="body1" sx={{ flexGrow: 1 }}>
-              {(() => {
+          {/* Show JSON when complete */}
+          {isComplete && jsonData ? (
+            <>
+              <Typography variant="body2" color="text.secondary" mb={2}>
+                {total} chaves carregadas com sucesso! Você pode copiar ou baixar o arquivo JSON.
+              </Typography>
+              <TextField
+                fullWidth
+                multiline
+                rows={15}
+                value={jsonData}
+                InputProps={{
+                  readOnly: true,
+                  sx: {
+                    fontFamily: 'monospace',
+                    fontSize: '0.85rem',
+                  },
+                }}
+                sx={{ mb: 2 }}
+              />
+            </>
+          ) : (
+            <>
+              {/* Main Message */}
+              <Box display="flex" alignItems="center" gap={2} mb={3}>
+                <Typography variant="body1" sx={{ flexGrow: 1 }}>
+                  {(() => {
                 // Add estimated time to the message if available
                 if (phase === 'processing' && total > 0 && startTime) {
                   const batchMatch = message.match(/lote (\d+)\/(\d+)/);
@@ -156,22 +213,24 @@ const LoadingProgressModal = ({
             />
           </Box>
 
-          {/* Progress Details */}
-          <Box display="flex" justifyContent="space-between" alignItems="center">
-            <Typography variant="body2" color="text.secondary">
-              {phase === 'processing' && total > 0 ? (
-                <>
-                  <strong>{current.toLocaleString()}</strong> de{' '}
-                  <strong>{total.toLocaleString()}</strong> chaves processadas
-                </>
-              ) : (
-                ''
-              )}
-            </Typography>
-            <Typography variant="body2" color="text.secondary" fontWeight="bold">
-              {progress}%
-            </Typography>
-          </Box>
+              {/* Progress Details */}
+              <Box display="flex" justifyContent="space-between" alignItems="center">
+                <Typography variant="body2" color="text.secondary">
+                  {phase === 'processing' && total > 0 ? (
+                    <>
+                      <strong>{current.toLocaleString()}</strong> de{' '}
+                      <strong>{total.toLocaleString()}</strong> chaves processadas
+                    </>
+                  ) : (
+                    ''
+                  )}
+                </Typography>
+                <Typography variant="body2" color="text.secondary" fontWeight="bold">
+                  {progress}%
+                </Typography>
+              </Box>
+            </>
+          )}
         </Box>
       </DialogContent>
 
@@ -186,6 +245,29 @@ const LoadingProgressModal = ({
           >
             Cancelar Operação
           </Button>
+        ) : jsonData ? (
+          <Box display="flex" gap={1} width="100%">
+            <Button 
+              onClick={handleCopy} 
+              variant="outlined" 
+              startIcon={<CopyIcon />}
+              fullWidth
+            >
+              {copySuccess ? 'Copiado!' : 'Copiar JSON'}
+            </Button>
+            <Button 
+              onClick={handleDownload} 
+              variant="contained" 
+              color="success"
+              startIcon={<DownloadIcon />}
+              fullWidth
+            >
+              Baixar Arquivo
+            </Button>
+            <Button onClick={onCancel} variant="outlined" color="inherit">
+              Fechar
+            </Button>
+          </Box>
         ) : (
           <Button onClick={onCancel} variant="contained" color="success" fullWidth>
             Fechar

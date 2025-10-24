@@ -52,6 +52,8 @@ import {
   resetLoadingProgress,
   setKeys,
   setTotalKeys,
+  setLoadedKeysJson,
+  clearLoadedKeysJson,
 } from '@/store/slices/keysSlice';
 import ValueEditor from './ValueEditor';
 import TreeView from './TreeView';
@@ -70,7 +72,7 @@ import { formatTTL } from '@/utils/timeFormatter';
 
 const KeysBrowser = () => {
   const dispatch = useDispatch<AppDispatch>();
-  const { keys, selectedKey, selectedValue, searchPattern, isLoading, isLoadingValue, isLoadingAllKeys, totalKeys, error, loadingProgress } = useSelector(
+  const { keys, selectedKey, selectedValue, searchPattern, isLoading, isLoadingValue, isLoadingAllKeys, totalKeys, error, loadingProgress, loadedKeysJson } = useSelector(
     (state: RootState) => state.keys
   );
   const { activeConnection } = useSelector((state: RootState) => state.connection);
@@ -134,18 +136,49 @@ const KeysBrowser = () => {
 
   const handleLoadAllKeys = async () => {
     if (activeConnection) {
-      console.log('🚀 Carregando todas as chaves...');
+      console.log(' Carregando todas as chaves...');
       try {
         // Use simple polling method
-        console.log('🔄 Usando método simples...');
+        console.log(' Usando método simples...');
         const keys = await loadAllKeysSimple(searchPattern);
         
-        // Update keys in Redux store
-        dispatch(setKeys(keys));
-        dispatch(setTotalKeys(keys.length));
+        // Update progress to show we're preparing the file
+        dispatch(setLoadingProgress({
+          isActive: true,
+          phase: 'completing',
+          message: 'Preparando arquivo JSON...',
+          progress: 100,
+          total: keys.length,
+          current: keys.length,
+        }));
+        
+        // Small delay to show the "preparing" message
+        await new Promise(resolve => setTimeout(resolve, 300));
+        
+        // Process JSON data BEFORE marking as complete
+        const jsonData = JSON.stringify(keys, null, 2);
+        dispatch(setLoadedKeysJson({ 
+          json: jsonData, 
+          fileName: `redis-keys-${activeConnection.name}-${new Date().toISOString().split('T')[0]}.json` 
+        }));
+        
+        // Wait a bit to ensure Redux state is updated
+        await new Promise(resolve => setTimeout(resolve, 100));
+        
+        // Now mark as complete - modal will open with JSON already loaded
+        dispatch(setLoadingProgress({
+          isActive: false,
+          phase: 'complete',
+          message: `${keys.length} chaves carregadas com sucesso!`,
+          progress: 100,
+          total: keys.length,
+          current: keys.length,
+        }));
+        
+        console.log(` Carregamento concluído: ${keys.length} chaves`);
         
       } catch (error) {
-        console.error('❌ Erro ao carregar chaves:', error);
+        console.error(' Erro ao carregar chaves:', error);
         if (error instanceof Error && !error.message.includes('cancelada')) {
           dispatch(resetLoadingProgress());
         }
@@ -154,7 +187,7 @@ const KeysBrowser = () => {
   };
 
   const handleCancelLoading = () => {
-    console.log('🛑 Usuário solicitou cancelamento...');
+    console.log(' Usuário solicitou cancelamento...');
     
     // Use simple cancellation
     cancelSimple();
@@ -390,7 +423,7 @@ const KeysBrowser = () => {
                   <RefreshIcon />
                 </IconButton>
               </Tooltip>
-              <Tooltip title="Load All Keys">
+              <Tooltip title="Download All Keys">
                 <IconButton 
                   onClick={handleLoadAllKeys} 
                   disabled={isLoading || loadingProgress.isActive}
@@ -532,7 +565,12 @@ const KeysBrowser = () => {
             total={loadingProgress.total}
             current={loadingProgress.current}
             startTime={loadingProgress.startTime}
-            onCancel={loadingProgress.phase === 'complete' ? () => dispatch(resetLoadingProgress()) : handleCancelLoading}
+            jsonData={loadedKeysJson.json}
+            fileName={loadedKeysJson.fileName}
+            onCancel={loadingProgress.phase === 'complete' ? () => {
+              dispatch(resetLoadingProgress());
+              dispatch(clearLoadedKeysJson());
+            } : handleCancelLoading}
           />
 
           {/* Error Modal */}

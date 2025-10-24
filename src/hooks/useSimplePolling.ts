@@ -110,26 +110,15 @@ export const useSimplePolling = () => {
         }));
 
         if (status.status === 'complete') {
-          console.log('✅ Operação concluída!');
+          console.log('✅ Operação concluída no backend!');
           
-          // Show completion status first
-          dispatch(setLoadingProgress({
-            isActive: false,
-            phase: 'complete',
-            message: status.message,
-            progress: 100,
-            total: status.total,
-            current: status.current,
-          }));
+          // Clean up backend operation
+          fetch(`/api/redis/keys/status?id=${operationId}`, {
+            method: 'DELETE',
+          }).catch(console.error);
           
-          // Clean up after a delay to show success message
-          setTimeout(() => {
-            fetch(`/api/redis/keys/status?id=${operationId}`, {
-              method: 'DELETE',
-            }).catch(console.error);
-            
-            resolve(status.keys || []);
-          }, 2000); // Show success for 2 seconds
+          // Resolve immediately - let KeysBrowser handle the "preparing" phase
+          resolve(status.keys || []);
           
           return;
         }

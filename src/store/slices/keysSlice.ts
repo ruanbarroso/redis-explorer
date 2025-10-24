@@ -22,6 +22,11 @@ interface KeysState {
     current: number;
     startTime?: number;
   };
+  // Loaded keys JSON for download
+  loadedKeysJson: {
+    json: string | null;
+    fileName: string | null;
+  };
 }
 
 const initialState: KeysState = {
@@ -42,6 +47,10 @@ const initialState: KeysState = {
     total: 0,
     current: 0,
     startTime: undefined,
+  },
+  loadedKeysJson: {
+    json: null,
+    fileName: null,
   },
 };
 
@@ -155,6 +164,15 @@ const keysSlice = createSlice({
     setTotalKeys: (state, action: PayloadAction<number>) => {
       state.totalKeys = action.payload;
     },
+    setLoadedKeysJson: (state, action: PayloadAction<{ json: string; fileName: string }>) => {
+      state.loadedKeysJson = action.payload;
+    },
+    clearLoadedKeysJson: (state) => {
+      state.loadedKeysJson = {
+        json: null,
+        fileName: null,
+      };
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -208,7 +226,7 @@ const keysSlice = createSlice({
   },
 });
 
-export const { setSearchPattern, setSelectedKey, clearKeys, clearError, setLoadingProgress, resetLoadingProgress, setKeys, setTotalKeys } =
+export const { setSearchPattern, setSelectedKey, clearKeys, clearError, setLoadingProgress, resetLoadingProgress, setKeys, setTotalKeys, setLoadedKeysJson, clearLoadedKeysJson } =
   keysSlice.actions;
 
 export default keysSlice.reducer;

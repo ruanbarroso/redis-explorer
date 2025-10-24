@@ -5,6 +5,7 @@ import CssBaseline from '@mui/material/CssBaseline';
 import { Provider } from 'react-redux';
 import { store } from '@/store';
 import { theme } from '@/theme';
+import EmotionCacheProvider from '@/lib/emotion-cache';
 
 interface ProvidersProps {
   children: React.ReactNode;
@@ -13,10 +14,12 @@ interface ProvidersProps {
 export default function Providers({ children }: ProvidersProps) {
   return (
     <Provider store={store}>
-      <ThemeProvider theme={theme}>
-        <CssBaseline />
-        {children}
-      </ThemeProvider>
+      <EmotionCacheProvider>
+        <ThemeProvider theme={theme}>
+          <CssBaseline />
+          {children}
+        </ThemeProvider>
+      </EmotionCacheProvider>
     </Provider>
   );
 }
