@@ -14,6 +14,7 @@ import {
   IconButton,
   useTheme,
   Button,
+  Badge,
 } from '@mui/material';
 import {
   Storage as StorageIcon,
@@ -22,6 +23,7 @@ import {
   Menu as MenuIcon,
   Logout as LogoutIcon,
   VpnKey as ChangePasswordIcon,
+  Notifications as NotificationsIcon,
 } from '@mui/icons-material';
 import { useSelector } from 'react-redux';
 import { RootState } from '@/store';
@@ -38,11 +40,13 @@ import ConnectionDialog from '@/components/ConnectionDialog';
 import KeysBrowser from '@/components/KeysBrowser';
 import Dashboard from '@/components/Dashboard';
 import Terminal from '@/components/Terminal';
+import Alerts from '@/components/Alerts';
 import { RedisConnection } from '@/types/redis';
+import { AlertsProvider, useAlerts } from '@/contexts/AlertsContext';
 
 const DRAWER_WIDTH = 240;
 
-type TabType = 'browser' | 'dashboard' | 'terminal';
+type TabType = 'browser' | 'dashboard' | 'terminal' | 'alerts';
 type AppState = 'connection-selection' | 'main-app';
 
 export default function Home() {
@@ -104,6 +108,7 @@ export default function Home() {
     }
   }, [isHydrated, isAuthenticated, activeConnection]); // Include activeConnection to react to changes
 
+
   const handleDrawerToggle = () => {
     setMobileOpen(!mobileOpen);
   };
@@ -117,11 +122,6 @@ export default function Home() {
     // This function is no longer needed since we go directly to connection selector
   };
 
-  const menuItems = [
-    { id: 'dashboard', label: 'Dashboard', icon: <DashboardIcon /> },
-    { id: 'browser', label: 'Keys Browser', icon: <StorageIcon /> },
-    { id: 'terminal', label: 'CLI', icon: <TerminalIcon /> },
-  ];
 
   // Mostra loading até que o cliente esteja pronto e a autenticação seja verificada
   if (!isClient || !isHydrated || isLoading) {
@@ -152,12 +152,78 @@ export default function Home() {
     );
   }
 
-  // Renderiza a aplicação principal
-  return renderMainApp();
+  // Renderiza a aplicação principal com AlertsProvider
+  return (
+    <AlertsProvider>
+      <MainApp 
+        activeTab={activeTab}
+        setActiveTab={setActiveTab}
+        mobileOpen={mobileOpen}
+        setMobileOpen={setMobileOpen}
+        connectionDialogOpen={connectionDialogOpen}
+        setConnectionDialogOpen={setConnectionDialogOpen}
+        handleManageConnections={handleManageConnections}
+        logoutDialogOpen={logoutDialogOpen}
+        changePasswordDialogOpen={changePasswordDialogOpen}
+        handleConfirmLogout={handleConfirmLogout}
+        closeLogoutDialog={closeLogoutDialog}
+        closeChangePasswordDialog={closeChangePasswordDialog}
+        showChangePassword={showChangePassword}
+        showLogoutConfirmation={showLogoutConfirmation}
+      />
+    </AlertsProvider>
+  );
+}
 
+interface MainAppProps {
+  activeTab: TabType;
+  setActiveTab: (tab: TabType) => void;
+  mobileOpen: boolean;
+  setMobileOpen: (open: boolean) => void;
+  connectionDialogOpen: boolean;
+  setConnectionDialogOpen: (open: boolean) => void;
+  handleManageConnections: () => void;
+  logoutDialogOpen: boolean;
+  changePasswordDialogOpen: boolean;
+  handleConfirmLogout: () => void;
+  closeLogoutDialog: () => void;
+  closeChangePasswordDialog: () => void;
+  showChangePassword: () => void;
+  showLogoutConfirmation: () => void;
+}
 
-  function renderMainApp() {
-    const renderContent = () => {
+function MainApp({
+  activeTab,
+  setActiveTab,
+  mobileOpen,
+  setMobileOpen,
+  connectionDialogOpen,
+  setConnectionDialogOpen,
+  handleManageConnections,
+  logoutDialogOpen,
+  changePasswordDialogOpen,
+  handleConfirmLogout,
+  closeLogoutDialog,
+  closeChangePasswordDialog,
+  showChangePassword,
+  showLogoutConfirmation,
+}: MainAppProps) {
+  const theme = useTheme();
+  const { activeConnection } = useSelector((state: RootState) => state.connection);
+  const { alertCount } = useAlerts();
+
+  const menuItems = [
+    { id: 'dashboard', label: 'Dashboard', icon: <DashboardIcon /> },
+    { id: 'alerts', label: 'Alertas', icon: <NotificationsIcon />, badge: alertCount },
+    { id: 'browser', label: 'Keys Browser', icon: <StorageIcon /> },
+    { id: 'terminal', label: 'CLI', icon: <TerminalIcon /> },
+  ];
+
+  const handleDrawerToggle = () => {
+    setMobileOpen(!mobileOpen);
+  };
+
+  const renderContent = () => {
       // Require active connection for all tabs
       if (!activeConnection) {
         return (
@@ -183,6 +249,8 @@ export default function Home() {
       switch (activeTab) {
         case 'dashboard':
           return <Dashboard />;
+        case 'alerts':
+          return <Alerts />;
         case 'browser':
           return <KeysBrowser />;
         case 'terminal':
@@ -190,9 +258,9 @@ export default function Home() {
         default:
           return <Dashboard />;
       }
-    };
+  };
 
-    const drawer = (
+  const drawer = (
       <Box>
         <Toolbar>
           <Box display="flex" alignItems="center" gap={1}>
@@ -216,7 +284,13 @@ export default function Home() {
               }}
             >
               <ListItemIcon sx={{ color: 'inherit' }}>
-                {item.icon}
+                {item.badge !== undefined && item.badge > 0 ? (
+                  <Badge badgeContent={item.badge} color="error">
+                    {item.icon}
+                  </Badge>
+                ) : (
+                  item.icon
+                )}
               </ListItemIcon>
               <ListItemText primary={item.label} />
             </ListItem>
@@ -247,9 +321,9 @@ export default function Home() {
           </Box>
         </Box>
       </Box>
-    );
+  );
 
-    return (
+  return (
       <Box sx={{ display: 'flex', height: '100vh' }}>
         <AppBar
           position="fixed"
@@ -345,6 +419,5 @@ export default function Home() {
           onClose={() => setConnectionDialogOpen(false)}
         />
       </Box>
-    );
-  }
+  );
 }

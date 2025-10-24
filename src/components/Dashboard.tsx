@@ -1,9 +1,7 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { Box, Grid, Typography, IconButton, Chip, Divider } from '@mui/material';
+import { Box, Grid, Typography, CircularProgress, Divider } from '@mui/material';
 import {
-  Refresh as RefreshIcon,
   Memory as MemoryIcon,
   Speed as SpeedIcon,
   Timeline as TimelineIcon,
@@ -16,135 +14,14 @@ import {
   Storage as StorageIcon,
   Sync as SyncIcon,
 } from '@mui/icons-material';
-import { useSelector, useDispatch } from 'react-redux';
-import { RootState, AppDispatch } from '@/store';
+import { useSelector } from 'react-redux';
+import { RootState } from '@/store';
 import { MetricCard } from './MetricCard';
-import { AlertBanner } from './AlertBanner';
-import { RedisMetrics } from '@/types/metrics';
-import { useRouter } from 'next/navigation';
-import { disconnectFromRedis } from '@/store/slices/connectionSlice';
-import { useConnectionErrorHandler } from '@/hooks/useConnectionErrorHandler';
-import ErrorModal from './ErrorModal';
+import { useMetrics } from '@/contexts/AlertsContext';
 
 const Dashboard = () => {
-  const dispatch = useDispatch<AppDispatch>();
   const { activeConnection } = useSelector((state: RootState) => state.connection);
-  const [metrics, setMetrics] = useState<RedisMetrics | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [autoRefresh, setAutoRefresh] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const { handleConnectionError, handleFetchError, errorModal, closeErrorModal } = useConnectionErrorHandler();
-
-  const fetchMetrics = async (): Promise<boolean> => {
-    if (!activeConnection?.connected) {
-      setIsLoading(false);
-      return false;
-    }
-
-    try {
-      const response = await fetch('/api/redis/metrics', {
-        credentials: 'include',
-      });
-
-      if (!response.ok) {
-        // Erro HTTP 503 - Redis não conectado ou serviço indisponível
-        if (response.status === 503) {
-          console.error('Redis connection unavailable, redirecting to connections...');
-          handleConnectionError();
-          return false;
-        }
-        throw new Error(`HTTP ${response.status}: Failed to fetch metrics`);
-      }
-
-      const data = await response.json();
-      
-      // Verificar se há erro na resposta
-      if (data.error) {
-        console.error('Redis error in response:', data.error);
-        handleConnectionError();
-        return false;
-      }
-
-      setMetrics(data.metrics);
-      setError(null);
-      return true; // Sucesso
-    } catch (err) {
-      console.error('Error fetching metrics:', err);
-      
-      // Erros de rede (fetch failed, timeout, etc)
-      if (err instanceof TypeError && err.message.includes('fetch')) {
-        console.error('Network error, redirecting to connections...');
-        handleConnectionError();
-        return false;
-      }
-      
-      setError(err instanceof Error ? err.message : 'Unknown error');
-      return false;
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    if (activeConnection?.connected) {
-      // Reset state quando trocar de conexão
-      setIsLoading(true);
-      setMetrics(null);
-      setError(null);
-      
-      let isMounted = true;
-
-      const fetchLoop = async () => {
-        // Fazer primeira chamada sempre
-        const success = await fetchMetrics();
-        
-        // Se falhou, desligar auto-refresh e parar
-        if (!success) {
-          console.error('❌ Falha ao buscar métricas, desligando auto-refresh');
-          setAutoRefresh(false);
-          return;
-        }
-        
-        // Se auto-refresh está desligado, parar aqui
-        if (!autoRefresh) {
-          return;
-        }
-        
-        // Loop de auto-refresh
-        while (isMounted && autoRefresh) {
-          // Aguardar 2 segundos antes da próxima chamada
-          await new Promise(resolve => setTimeout(resolve, 2000));
-          
-          // Se não está mais montado ou auto-refresh foi desligado, parar
-          if (!isMounted || !autoRefresh) {
-            break;
-          }
-          
-          const success = await fetchMetrics();
-          
-          // Se falhou, desligar auto-refresh
-          if (!success) {
-            console.error('❌ Falha ao buscar métricas, desligando auto-refresh');
-            setAutoRefresh(false);
-            break;
-          }
-        }
-      };
-
-      // Inicia o loop
-      fetchLoop();
-
-      // Cleanup: para o loop quando desmontar ou mudar dependências
-      return () => {
-        isMounted = false;
-      };
-    } else {
-      // Sem conexão ativa, limpar estado
-      setIsLoading(false);
-      setMetrics(null);
-      setError(null);
-    }
-  }, [activeConnection?.id, autoRefresh]);
+  const { metrics, isLoading } = useMetrics();
 
   const formatNumber = (num: number) => {
     return new Intl.NumberFormat().format(num);
@@ -173,6 +50,14 @@ const Dashboard = () => {
     );
   }
 
+  if (isLoading && !metrics) {
+    return (
+      <Box display="flex" justifyContent="center" alignItems="center" height="100%">
+        <CircularProgress />
+      </Box>
+    );
+  }
+
   return (
     <Box sx={{ height: '100%', overflow: 'auto', p: 3 }}>
       {/* Header */}
@@ -187,29 +72,7 @@ const Dashboard = () => {
             </Typography>
           )}
         </Box>
-        <Box display="flex" gap={1} alignItems="center">
-          <Chip
-            label={autoRefresh ? 'Auto-refresh ON' : 'Auto-refresh OFF'}
-            color={autoRefresh ? 'success' : 'default'}
-            onClick={() => setAutoRefresh(!autoRefresh)}
-            clickable
-            size="small"
-          />
-          <IconButton 
-            onClick={fetchMetrics} 
-            disabled={isLoading || autoRefresh} 
-            size="small"
-            title={autoRefresh ? 'Desative o auto-refresh para atualizar manualmente' : 'Atualizar métricas'}
-          >
-            <RefreshIcon />
-          </IconButton>
-        </Box>
       </Box>
-
-      {/* Alert Banner */}
-      {metrics && metrics.alerts.length > 0 && (
-        <AlertBanner alerts={metrics.alerts} health={metrics.health} />
-      )}
 
       {/* Métricas Críticas (Tier 1) */}
       <Typography variant="h6" fontWeight={600} mb={2} color="error.main">
@@ -470,14 +333,6 @@ const Dashboard = () => {
           </Typography>
         </Box>
       )}
-
-      {/* Error Modal */}
-      <ErrorModal
-        open={errorModal.open}
-        message={errorModal.message}
-        details={errorModal.details}
-        onClose={closeErrorModal}
-      />
     </Box>
   );
 };
