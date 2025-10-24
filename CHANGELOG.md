@@ -1,3 +1,9 @@
+## [1.13.0](https://github.com/ruanbarroso/redis-explorer/compare/v1.12.0...v1.13.0) (2025-10-24)
+
+### 🚀 Features
+
+* implementa countdown automático de TTL e exibição editável ([08c07f6](https://github.com/ruanbarroso/redis-explorer/commit/08c07f617efae5a1410af8a5625dbbe542cd6b93))
+
 ## [1.12.0](https://github.com/ruanbarroso/redis-explorer/compare/v1.11.0...v1.12.0) (2025-10-24)
 
 ### 🚀 Features
