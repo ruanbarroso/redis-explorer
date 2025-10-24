@@ -137,9 +137,9 @@ class SessionManager {
     this.sessions.clear();
   }
 
-  // Cleanup automático de sessões inativas (30 minutos)
+  // Cleanup automático de sessões inativas (24 horas)
   cleanupInactiveSessions(): void {
-    const INACTIVITY_TIMEOUT = 30 * 60 * 1000; // 30 minutos
+    const INACTIVITY_TIMEOUT = 24 * 60 * 60 * 1000; // 24 horas
     const now = Date.now();
     
     this.sessions.forEach((session, sessionId) => {

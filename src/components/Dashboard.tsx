@@ -33,7 +33,7 @@ const Dashboard = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [autoRefresh, setAutoRefresh] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const { handleConnectionError, handleFetchError, errorModal, closeErrorModal } = useConnectionErrorHandler();
+  const { handleConnectionError, handleFetchError, errorModal, closeErrorModal, isReconnecting } = useConnectionErrorHandler();
 
   const fetchMetrics = async (): Promise<boolean> => {
     if (!activeConnection?.connected) {
@@ -49,8 +49,8 @@ const Dashboard = () => {
       if (!response.ok) {
         // Erro HTTP 503 - Redis não conectado ou serviço indisponível
         if (response.status === 503) {
-          console.error('Redis connection unavailable, redirecting to connections...');
-          handleConnectionError();
+          console.error('Redis connection unavailable (503), attempting reconnection...');
+          await handleConnectionError(true); // Tentar reconectar
           return false;
         }
         throw new Error(`HTTP ${response.status}: Failed to fetch metrics`);
@@ -61,7 +61,7 @@ const Dashboard = () => {
       // Verificar se há erro na resposta
       if (data.error) {
         console.error('Redis error in response:', data.error);
-        handleConnectionError();
+        await handleConnectionError(true); // Tentar reconectar
         return false;
       }
 
@@ -73,8 +73,8 @@ const Dashboard = () => {
       
       // Erros de rede (fetch failed, timeout, etc)
       if (err instanceof TypeError && err.message.includes('fetch')) {
-        console.error('Network error, redirecting to connections...');
-        handleConnectionError();
+        console.error('Network error, attempting reconnection...');
+        await handleConnectionError(true); // Tentar reconectar
         return false;
       }
       
@@ -98,11 +98,23 @@ const Dashboard = () => {
         // Fazer primeira chamada sempre
         const success = await fetchMetrics();
         
-        // Se falhou, desligar auto-refresh e parar
+        // Se falhou na primeira tentativa
         if (!success) {
-          console.error('❌ Falha ao buscar métricas, desligando auto-refresh');
-          setAutoRefresh(false);
-          return;
+          // Se está reconectando, aguardar 2 segundos e tentar novamente
+          if (isReconnecting) {
+            console.log('⏳ Aguardando reconexão...');
+            await new Promise(resolve => setTimeout(resolve, 2000));
+            const retrySuccess = await fetchMetrics();
+            if (!retrySuccess) {
+              console.error('❌ Falha ao buscar métricas após reconexão, desligando auto-refresh');
+              setAutoRefresh(false);
+              return;
+            }
+          } else {
+            console.error('❌ Falha ao buscar métricas, desligando auto-refresh');
+            setAutoRefresh(false);
+            return;
+          }
         }
         
         // Se auto-refresh está desligado, parar aqui
@@ -144,7 +156,7 @@ const Dashboard = () => {
       setMetrics(null);
       setError(null);
     }
-  }, [activeConnection?.id, autoRefresh]);
+  }, [activeConnection?.id, autoRefresh, isReconnecting]);
 
   const formatNumber = (num: number) => {
     return new Intl.NumberFormat().format(num);
@@ -175,6 +187,15 @@ const Dashboard = () => {
 
   return (
     <Box sx={{ height: '100%', overflow: 'auto', p: 3 }}>
+      {/* Indicador de Reconexão */}
+      {isReconnecting && (
+        <AlertBanner
+          severity="info"
+          message="Reconectando ao Redis..."
+          sx={{ mb: 2 }}
+        />
+      )}
+      
       {/* Header */}
       <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
         <Box>

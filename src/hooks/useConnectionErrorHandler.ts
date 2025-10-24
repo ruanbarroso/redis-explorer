@@ -1,19 +1,41 @@
 import { useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { RootState } from '@/store';
-import { disconnectFromRedis } from '@/store/slices/connectionSlice';
+import { RootState, AppDispatch } from '@/store';
+import { disconnectFromRedis, connectToRedis } from '@/store/slices/connectionSlice';
 
 export function useConnectionErrorHandler() {
-  const dispatch = useDispatch();
+  const dispatch = useDispatch<AppDispatch>();
   const { activeConnection } = useSelector((state: RootState) => state.connection);
   const [errorModal, setErrorModal] = useState<{
     open: boolean;
     message: string;
     details?: string;
   }>({ open: false, message: '' });
+  const [isReconnecting, setIsReconnecting] = useState(false);
 
-  const handleConnectionError = () => {
-    // Desconectar a conexão ativa
+  const handleConnectionError = async (attemptReconnect = true) => {
+    // Se já está tentando reconectar, não fazer nada
+    if (isReconnecting) {
+      return;
+    }
+
+    // Tentar reconectar automaticamente se houver conexão ativa
+    if (attemptReconnect && activeConnection) {
+      console.log('🔄 Tentando reconectar automaticamente...');
+      setIsReconnecting(true);
+      
+      try {
+        await dispatch(connectToRedis(activeConnection)).unwrap();
+        console.log('✅ Reconexão bem-sucedida!');
+        setIsReconnecting(false);
+        return; // Reconexão bem-sucedida, não desconectar
+      } catch (error) {
+        console.error('❌ Falha na reconexão automática:', error);
+        setIsReconnecting(false);
+      }
+    }
+
+    // Se reconexão falhou ou não foi tentada, desconectar
     if (activeConnection) {
       dispatch(disconnectFromRedis(activeConnection.id));
     }
@@ -71,5 +93,6 @@ export function useConnectionErrorHandler() {
     showErrorModal,
     closeErrorModal,
     errorModal,
+    isReconnecting,
   };
 }
