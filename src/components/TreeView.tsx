@@ -20,6 +20,8 @@ import {
   DialogActions,
   Button,
   Alert,
+  CircularProgress,
+  Backdrop,
 } from '@mui/material';
 import {
   ExpandMore as ExpandMoreIcon,
@@ -36,7 +38,8 @@ import { RedisDataType } from '@/types/redis';
 import { formatTTL } from '@/utils/timeFormatter';
 import KeyTypeIcon from './KeyTypeIcon';
 import { useDispatch } from 'react-redux';
-import { deleteKey } from '@/store/slices/keysSlice';
+import { removeKeysLocally } from '@/store/slices/keysSlice';
+import { AppDispatch } from '@/store/store';
 
 interface TreeViewProps {
   nodes: TreeNode[];
@@ -48,6 +51,7 @@ interface TreeViewProps {
   onToggleExpand: (nodeId: string) => void;
   onExpandAllChildren?: (nodeId: string) => void;
   onCollapseAllChildren?: (nodeId: string) => void;
+  separator?: string;
 }
 
 const TreeView = ({
@@ -60,52 +64,91 @@ const TreeView = ({
   onToggleExpand,
   onExpandAllChildren,
   onCollapseAllChildren,
+  separator = '::',
 }: TreeViewProps) => {
-  const dispatch = useDispatch();
+  const dispatch = useDispatch<AppDispatch>();
   const [deleteDialog, setDeleteDialog] = useState<{
     open: boolean;
     folderName?: string;
-    keyCount?: number;
-    keysToDelete?: string[];
+    folderPrefix?: string;
+  }>({ open: false });
+  const [loading, setLoading] = useState(false);
+  const [successDialog, setSuccessDialog] = useState<{
+    open: boolean;
+    deletedCount?: number;
+    folderName?: string;
   }>({ open: false });
   
   const handleFolderDelete = (folderNode: TreeNode) => {
-    const keysToDelete = collectAllKeys(folderNode);
-    const keyCount = keysToDelete.length;
-    
-    if (keyCount === 0) {
-      setDeleteDialog({
-        open: true,
-        folderName: folderNode.name,
-        keyCount: 0,
-      });
-      return;
-    }
-    
     setDeleteDialog({
       open: true,
       folderName: folderNode.name,
-      keyCount,
-      keysToDelete,
+      folderPrefix: folderNode.fullPath,
     });
   };
 
   const handleConfirmDelete = async () => {
-    if (deleteDialog.keysToDelete && deleteDialog.keyCount && deleteDialog.keyCount > 0) {
-      try {
-        console.log(`🗑️ Excluindo ${deleteDialog.keyCount} chave(s) da pasta "${deleteDialog.folderName}"`);
-        
-        // Executar exclusão diretamente usando Redux, sem passar pelo KeysBrowser
-        await Promise.all(deleteDialog.keysToDelete.map(keyPath => 
-          dispatch(deleteKey(keyPath))
-        ));
-        
-        console.log(`✅ ${deleteDialog.keyCount} chave(s) excluída(s) com sucesso`);
-      } catch (error) {
-        console.error('❌ Erro ao excluir chaves da pasta:', error);
-      }
-    }
+    if (!deleteDialog.folderPrefix) return;
+    
     setDeleteDialog({ open: false });
+    setLoading(true);
+    
+    try {
+      console.log(`🗑️ Excluindo todas as chaves com prefixo "${deleteDialog.folderPrefix}"`);
+      
+      const response = await fetch(
+        `/api/redis/keys/prefix?prefix=${encodeURIComponent(deleteDialog.folderPrefix)}&separator=${encodeURIComponent(separator)}`,
+        { method: 'DELETE' }
+      );
+      
+      if (!response.ok) {
+        throw new Error('Falha ao excluir chaves');
+      }
+      
+      const data = await response.json();
+      console.log(`✅ ${data.deletedCount} chave(s) excluída(s) com sucesso no Redis`);
+      
+      // Remover chaves do Redux localmente (sem chamar backend)
+      if (deleteDialog.folderPrefix) {
+        const prefix = deleteDialog.folderPrefix;
+        
+        // Coletar todas as chaves da árvore que começam com o prefixo
+        const keysToRemove: string[] = [];
+        const collectKeysFromNodes = (nodeList: TreeNode[]) => {
+          nodeList.forEach(node => {
+            // Match exato da pasta ou suas chaves filhas
+            // "portal" == "portal" OU "portal::xxx".startsWith("portal::")
+            const isExactFolder = node.fullPath === prefix;
+            const isChildKey = node.fullPath.startsWith(`${prefix}${separator}`);
+            
+            if (isExactFolder || isChildKey) {
+              if (node.type === 'key') {
+                keysToRemove.push(node.fullPath);
+              }
+              if (node.children) {
+                collectKeysFromNodes(node.children);
+              }
+            }
+          });
+        };
+        
+        collectKeysFromNodes(nodes);
+        
+        console.log(`🗑️ Removendo ${keysToRemove.length} chave(s) do Redux (prefixo: "${prefix}")`);
+        dispatch(removeKeysLocally(keysToRemove));
+      }
+      
+      setLoading(false);
+      setSuccessDialog({
+        open: true,
+        deletedCount: data.deletedCount,
+        folderName: deleteDialog.folderName,
+      });
+    } catch (error) {
+      console.error('❌ Erro ao excluir chaves da pasta:', error);
+      setLoading(false);
+      alert('Erro ao excluir pasta. Tente novamente.');
+    }
   };
   
   const collectAllKeys = (node: TreeNode): string[] => {
@@ -339,23 +382,15 @@ const TreeView = ({
           Confirmar Exclusão de Pasta
         </DialogTitle>
         <DialogContent>
-          {deleteDialog.keyCount === 0 ? (
-            <Alert severity="info" sx={{ mb: 2 }}>
-              Nenhuma chave encontrada na pasta "{deleteDialog.folderName}".
-            </Alert>
-          ) : (
-            <>
-              <DialogContentText sx={{ mb: 2 }}>
-                Tem certeza que deseja excluir <strong>{deleteDialog.keyCount} chave{deleteDialog.keyCount && deleteDialog.keyCount > 1 ? 's' : ''}</strong> na pasta <strong>"{deleteDialog.folderName}"</strong>?
-              </DialogContentText>
-              <Alert severity="warning" sx={{ mb: 2 }}>
-                ⚠️ Esta ação não pode ser desfeita!
-              </Alert>
-              <Typography variant="body2" color="text.secondary">
-                Todas as chaves dentro desta pasta serão permanentemente removidas do Redis.
-              </Typography>
-            </>
-          )}
+          <DialogContentText sx={{ mb: 2 }}>
+            Tem certeza que deseja excluir <strong>todas as chaves</strong> na pasta <strong>"{deleteDialog.folderName}"</strong>?
+          </DialogContentText>
+          <Alert severity="warning" sx={{ mb: 2 }}>
+            ⚠️ Esta ação não pode ser desfeita!
+          </Alert>
+          <Typography variant="body2" color="text.secondary">
+            Todas as chaves dentro desta pasta serão permanentemente removidas do Redis.
+          </Typography>
         </DialogContent>
         <DialogActions sx={{ p: 2, gap: 1 }}>
           <Button 
@@ -365,17 +400,61 @@ const TreeView = ({
           >
             Cancelar
           </Button>
-          {deleteDialog.keyCount && deleteDialog.keyCount > 0 && (
-            <Button 
-              onClick={handleConfirmDelete}
-              variant="contained"
-              color="error"
-              startIcon={<DeleteIcon />}
-              autoFocus
-            >
-              Excluir {deleteDialog.keyCount} Chave{deleteDialog.keyCount > 1 ? 's' : ''}
-            </Button>
-          )}
+          <Button 
+            onClick={handleConfirmDelete}
+            variant="contained"
+            color="error"
+            startIcon={<DeleteIcon />}
+            autoFocus
+          >
+            Excluir Pasta
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Modal de Loading */}
+      <Backdrop
+        sx={{ color: '#fff', zIndex: (theme) => theme.zIndex.drawer + 1 }}
+        open={loading}
+      >
+        <Box sx={{ textAlign: 'center' }}>
+          <CircularProgress color="inherit" size={60} />
+          <Typography variant="h6" sx={{ mt: 2 }}>
+            Excluindo chaves...
+          </Typography>
+          <Typography variant="body2" sx={{ mt: 1 }}>
+            Por favor, aguarde
+          </Typography>
+        </Box>
+      </Backdrop>
+
+      {/* Modal de Sucesso */}
+      <Dialog
+        open={successDialog.open}
+        onClose={() => setSuccessDialog({ open: false })}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle sx={{ color: 'success.main', display: 'flex', alignItems: 'center', gap: 1 }}>
+          ✅ Exclusão Concluída
+        </DialogTitle>
+        <DialogContent>
+          <Alert severity="success" sx={{ mb: 2 }}>
+            <strong>{successDialog.deletedCount}</strong> chave{successDialog.deletedCount && successDialog.deletedCount > 1 ? 's foram' : ' foi'} excluída{successDialog.deletedCount && successDialog.deletedCount > 1 ? 's' : ''} com sucesso!
+          </Alert>
+          <Typography variant="body2" color="text.secondary">
+            Todas as chaves da pasta <strong>"{successDialog.folderName}"</strong> foram removidas do Redis.
+          </Typography>
+        </DialogContent>
+        <DialogActions sx={{ p: 2 }}>
+          <Button 
+            onClick={() => setSuccessDialog({ open: false })}
+            variant="contained"
+            color="success"
+            autoFocus
+          >
+            OK
+          </Button>
         </DialogActions>
       </Dialog>
     </>

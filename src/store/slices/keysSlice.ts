@@ -202,6 +202,22 @@ const keysSlice = createSlice({
         state.totalKeys = afterCount;
       }
     },
+    removeKeysLocally: (state, action: PayloadAction<string[]>) => {
+      // Remove chaves localmente sem chamar o backend
+      const keysToRemove = action.payload;
+      state.keys = state.keys.filter(key => !keysToRemove.includes(key.name));
+      
+      // Se a chave selecionada foi removida, limpa a seleção
+      if (state.selectedKey && keysToRemove.includes(state.selectedKey)) {
+        state.selectedKey = null;
+        state.selectedValue = null;
+      }
+      
+      // Atualiza o total de chaves
+      if (state.totalKeys !== null) {
+        state.totalKeys = Math.max(0, state.totalKeys - keysToRemove.length);
+      }
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -255,7 +271,7 @@ const keysSlice = createSlice({
   },
 });
 
-export const { setSearchPattern, setSelectedKey, clearKeys, clearError, setLoadingProgress, resetLoadingProgress, setKeys, setTotalKeys, setLoadedKeysJson, clearLoadedKeysJson, decrementTTLs, removeExpiredKeys } =
+export const { setSearchPattern, setSelectedKey, clearKeys, clearError, setLoadingProgress, resetLoadingProgress, setKeys, setTotalKeys, setLoadedKeysJson, clearLoadedKeysJson, decrementTTLs, removeExpiredKeys, removeKeysLocally } =
   keysSlice.actions;
 
 export default keysSlice.reducer;

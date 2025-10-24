@@ -507,6 +507,7 @@ const KeysBrowser = () => {
                 onToggleExpand={toggleExpand}
                 onExpandAllChildren={expandAllChildren}
                 onCollapseAllChildren={collapseAllChildren}
+                separator={activeSeparator}
               />
             ) : (
               <VirtualizedKeysList
