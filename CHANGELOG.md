@@ -1,3 +1,9 @@
+## [1.16.0](https://github.com/ruanbarroso/redis-explorer/compare/v1.15.2...v1.16.0) (2025-10-25)
+
+### 🚀 Features
+
+* adiciona informações do Docker Hub nas releases e corrige publicação automática ([a525151](https://github.com/ruanbarroso/redis-explorer/commit/a52515165bc08a254037bbd3203907c4505a0ee5))
+
 ## [1.15.2](https://github.com/ruanbarroso/redis-explorer/compare/v1.15.1...v1.15.2) (2025-10-25)
 
 ### 🐛 Bug Fixes
