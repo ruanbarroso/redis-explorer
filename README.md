@@ -32,9 +32,13 @@ A modern, web-based Redis GUI explorer built with Next.js 15 and React 19. This 
 ![Alerts](https://raw.githubusercontent.com/ruanbarroso/redis-explorer/main/docs/screenshots/alerts.png)
 *Intelligent alerts for memory fragmentation, latency, and cache performance*
 
-### 🔍 Key Browser & Value Editor
+### 🔍 Key Browser
 ![Key Browser](https://raw.githubusercontent.com/ruanbarroso/redis-explorer/main/docs/screenshots/keys-browser.png)
-*Advanced key browsing with Monaco editor and JSON syntax highlighting*
+*Smart tree view with automatic separator detection and hierarchical navigation*
+
+### ✏️ Value Editor
+![Value Editor](https://raw.githubusercontent.com/ruanbarroso/redis-explorer/main/docs/screenshots/value-editor.png)
+*Monaco editor with JSON syntax highlighting and TTL countdown*
 
 ### 💻 Redis CLI
 ![CLI Terminal](https://raw.githubusercontent.com/ruanbarroso/redis-explorer/main/docs/screenshots/cli.png)

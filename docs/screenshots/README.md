@@ -8,8 +8,9 @@ Please save the following screenshots in this directory with these exact names:
 2. **connections.png** - Connection management page
 3. **dashboard.png** - Main dashboard with metrics
 4. **alerts.png** - System alerts page
-5. **keys-browser.png** - Keys browser with value editor
-6. **cli.png** - Redis CLI terminal
+5. **keys-browser.png** - Keys browser with tree view
+6. **value-editor.png** - Value editor with Monaco
+7. **cli.png** - Redis CLI terminal
 
 ## Image Requirements
 
@@ -31,11 +32,12 @@ Please save the following screenshots in this directory with these exact names:
 
 ## Current Status
 
-- [ ] login.png
-- [ ] connections.png
-- [ ] dashboard.png
-- [ ] alerts.png
-- [ ] keys-browser.png
-- [ ] cli.png
+- [x] login.png
+- [x] connections.png
+- [x] dashboard.png
+- [x] alerts.png
+- [x] keys-browser.png
+- [x] value-editor.png
+- [x] cli.png
 
 Once all screenshots are added, they will automatically appear in the README.md file.
