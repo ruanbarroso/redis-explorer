@@ -32,9 +32,9 @@ Connect to any Redis instance by configuring the connection in the web interface
 
 ## 🏷️ Available Tags
 
-- `latest` - Latest stable release
-- `v1.0.0`, `v1.1.0`, etc. - Specific version releases
-- `main-<sha>` - Development builds from main branch
+- `latest` - Latest stable release (currently v1.16.1)
+- `1.16.1`, `1.16.0`, `1.15.2`, etc. - Specific version releases
+- Automated releases via GitHub Actions with semantic versioning
 
 ## 🔧 Configuration
 
@@ -78,13 +78,15 @@ Run with: `docker-compose up -d`
 
 ## 📊 Features
 
-- ✅ **Multi-Connection Management** - Connect to multiple Redis instances
-- ✅ **Real-time Dashboard** - Live monitoring with performance metrics
-- ✅ **Key Browser** - Tree view with smart hierarchy and search
-- ✅ **Value Editor** - Syntax highlighting for different data types
-- ✅ **CLI Terminal** - Execute Redis commands directly
-- ✅ **Import/Export** - Backup and restore functionality
-- ✅ **Performance Monitoring** - Track slow queries and statistics
+- ✅ **Multi-Connection Management** - Unlimited connections with import/export
+- ✅ **Real-time Dashboard** - Live monitoring with intelligent alerts
+- ✅ **Smart Key Browser** - Tree view with auto separator detection
+- ✅ **Advanced Value Editor** - Monaco editor with TTL countdown
+- ✅ **CLI Terminal** - Full Redis CLI with command history
+- ✅ **System Alerts** - Memory fragmentation, latency, cache monitoring
+- ✅ **Auto-Disconnect** - Automatic cleanup of inactive connections
+- ✅ **Bulk Operations** - Delete multiple keys and folders
+- ✅ **Authentication** - Secure password-based access
 
 ## 🔒 Security
 
@@ -95,11 +97,12 @@ Run with: `docker-compose up -d`
 
 ## 📏 Image Details
 
-- **Base Image**: Node.js 20 Alpine Linux
-- **Size**: ~285MB (optimized)
-- **Architecture**: linux/amd64
-- **User**: nextjs (non-root)
+- **Base Image**: Node.js 22 Alpine Linux
+- **Size**: ~285MB (optimized with multi-stage build)
+- **Architecture**: linux/amd64 (ARM64 coming soon)
+- **User**: nextjs:1001 (non-root)
 - **Exposed Port**: 3000
+- **Build Cache**: GitHub Actions cache for faster builds
 
 ## 🆘 Troubleshooting
 

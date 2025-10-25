@@ -16,17 +16,29 @@ A modern, web-based Redis GUI explorer built with Next.js 15 and React 19. This 
 
 ## 📸 Screenshots
 
-### Dashboard Overview
-![Dashboard](https://via.placeholder.com/800x500/2D3748/FFFFFF?text=Redis+Dashboard+Screenshot)
-*Real-time Redis monitoring with performance metrics and connection status*
+### 🔐 Authentication
+![Login Screen](https://raw.githubusercontent.com/ruanbarroso/redis-explorer/main/docs/screenshots/login.png)
+*Secure authentication with password protection*
 
-### Key Browser
-![Key Browser](https://via.placeholder.com/800x500/2D3748/FFFFFF?text=Key+Browser+Screenshot)
-*Intuitive key browsing with tree view and search functionality*
+### 🔌 Connection Management
+![Connection Manager](https://raw.githubusercontent.com/ruanbarroso/redis-explorer/main/docs/screenshots/connections.png)
+*Manage multiple Redis connections with import/export functionality*
 
-### Value Editor
-![Value Editor](https://via.placeholder.com/800x500/2D3748/FFFFFF?text=Value+Editor+Screenshot)
-*Advanced value editing with syntax highlighting for different data types*
+### 📊 Dashboard Overview
+![Dashboard](https://raw.githubusercontent.com/ruanbarroso/redis-explorer/main/docs/screenshots/dashboard.png)
+*Real-time Redis monitoring with critical metrics and performance indicators*
+
+### 🚨 System Alerts
+![Alerts](https://raw.githubusercontent.com/ruanbarroso/redis-explorer/main/docs/screenshots/alerts.png)
+*Intelligent alerts for memory fragmentation, latency, and cache performance*
+
+### 🔍 Key Browser & Value Editor
+![Key Browser](https://raw.githubusercontent.com/ruanbarroso/redis-explorer/main/docs/screenshots/keys-browser.png)
+*Advanced key browsing with Monaco editor and JSON syntax highlighting*
+
+### 💻 Redis CLI
+![CLI Terminal](https://raw.githubusercontent.com/ruanbarroso/redis-explorer/main/docs/screenshots/cli.png)
+*Integrated Redis CLI with command history and syntax highlighting*
 
 ## 🚀 Quick Start
 
@@ -35,6 +47,8 @@ A modern, web-based Redis GUI explorer built with Next.js 15 and React 19. This 
 docker run -d -p 3000:3000 ruanbarroso/redis-explorer:latest
 ```
 Then open http://localhost:3000 in your browser!
+
+> 🔒 **First Access**: Create your admin password on first login
 
 ## 🆚 Why Redis Explorer?
 
@@ -52,55 +66,93 @@ Then open http://localhost:3000 in your browser!
 ## Features
 
 ### 🔌 Connection Management
-- Multiple Redis connection support
-- SSL/TLS connections
-- Connection testing and validation
-- Persistent connection storage
+- Multiple Redis connection support with unlimited connections
+- SSL/TLS secure connections
+- Connection testing and validation before saving
+- Persistent connection storage (server-side)
+- Import/Export connections (JSON format)
+- Auto-disconnect for inactive connections
+- Connection health monitoring
 
 ### 🔍 Key Browser
-- Advanced key search with pattern matching
-- Real-time key filtering
+- Smart tree view with automatic separator detection (`:`, `::`, `/`, `-`, `_`)
+- Advanced key search with pattern matching (Redis SCAN)
+- Real-time key filtering and navigation
 - Key type identification with color coding
-- TTL and size information
-- Bulk operations support
+- TTL countdown with live updates
+- Bulk delete operations with folder support
+- Streaming key loading for large datasets
+- Custom separator configuration
 
 ### ✏️ Value Editor
 - Support for all Redis data types:
-  - Strings (with Monaco editor)
-  - Hashes (table view with inline editing)
-  - Lists (indexed table view)
-  - Sets (member management)
-  - Sorted Sets (score-based ordering)
-- TTL management
-- Add/edit/delete operations
-- JSON syntax highlighting
+  - **Strings**: Monaco editor with JSON syntax highlighting
+  - **Hashes**: Table view with inline editing and field management
+  - **Lists**: Indexed table view with add/remove operations
+  - **Sets**: Member management with add/remove
+  - **Sorted Sets**: Score-based ordering with inline editing
+- Advanced TTL management:
+  - Live countdown display
+  - Human-readable format (days, hours, minutes)
+  - Edit TTL inline with validation
+  - Persist key (remove TTL)
+- Real-time value updates
+- JSON formatting and validation
+- Copy to clipboard functionality
 
 ### 📊 Dashboard & Monitoring
-- Real-time performance metrics
-- Memory usage tracking
-- Operations per second monitoring
-- Cache hit rate analysis
-- Slow query log
-- Interactive charts and graphs
-- Auto-refresh capabilities
+- **Critical Metrics** (with intelligent alerts):
+  - Cache Hit Ratio with trend analysis
+  - Memory Usage and Fragmentation
+  - Latency P50 and P95 percentiles
+  - CPU Usage monitoring
+- **Performance Indicators**:
+  - Operations per second (real-time)
+  - Connected clients tracking
+  - Evicted/Expired keys statistics
+- **Activity & Resources**:
+  - Network I/O monitoring
+  - Total keys count with TTL info
+  - Server uptime
+  - Replication status
+- Auto-refresh with configurable intervals
+- Color-coded alerts (Critical, Warning)
+- Last update timestamp
 
 ### 💻 CLI Terminal
-- Full Redis CLI integration
-- Command history with navigation
-- Syntax highlighting
-- Command categorization
+- Full Redis CLI integration with all commands
+- Command history with arrow key navigation (↑/↓)
+- Syntax highlighting for commands and responses
+- Auto-complete suggestions
 - Execution time tracking
-- Error handling and display
+- Error handling with detailed messages
+- Clear output functionality
+- Support for multi-line commands
 
-## Tech Stack
+### 🚨 Intelligent Alerts System
+- **Memory Fragmentation**: Critical alerts when > 1.5 ratio
+- **Latency Monitoring**: P95 latency warnings
+- **Cache Performance**: Low hit ratio detection
+- Real-time threshold monitoring
+- Color-coded severity levels
+- Actionable recommendations
 
-- **Frontend**: Next.js 15, React 19, TypeScript
-- **UI Framework**: Material-UI (MUI) v6
-- **State Management**: Redux Toolkit
-- **Redis Client**: ioredis
-- **Code Editor**: Monaco Editor
-- **Charts**: Recharts
-- **Styling**: Emotion, CSS-in-JS
+## 🛠️ Tech Stack
+
+- **Framework**: Next.js 15.1.0 with App Router and Turbopack
+- **UI Library**: React 19.0.0 with React DOM 19.0.0
+- **Language**: TypeScript 5.6
+- **UI Components**: Material-UI (MUI) v6 with Data Grid Premium
+- **State Management**: Redux Toolkit 2.3
+- **Redis Client**: ioredis 5.4 (Node.js) + redis 4.7 (compatibility)
+- **Code Editor**: Monaco Editor 0.52 with JSON syntax highlighting
+- **Charts**: Recharts 2.13 for performance visualization
+- **Styling**: Emotion 11 (CSS-in-JS)
+- **Authentication**: JWT with bcryptjs
+- **Real-time**: Socket.io 4.8 for live updates
+- **Testing**: Jest 29 with React Testing Library
+- **CI/CD**: GitHub Actions with Semantic Release
+- **Container**: Docker with multi-stage builds
 
 ## Installation
 
@@ -143,8 +195,12 @@ Then open http://localhost:3000 in your browser!
 docker run -d --name redis-explorer -p 3000:3000 ruanbarroso/redis-explorer:latest
 
 # Or with specific version
-docker run -d --name redis-explorer -p 3000:3000 ruanbarroso/redis-explorer:v1.0.0
+docker run -d --name redis-explorer -p 3000:3000 ruanbarroso/redis-explorer:1.16.1
 ```
+
+**Platform Support:**
+- ✅ linux/amd64
+- ⚠️ linux/arm64 (coming soon)
 
 **With Redis server:**
 ```bash
@@ -314,19 +370,24 @@ src/
 ## 🗺️ Roadmap
 
 ### ✅ Completed
-- [x] Multi-connection management
-- [x] Real-time dashboard
-- [x] Key browser with tree view
-- [x] Value editor with syntax highlighting
+- [x] Multi-connection management with import/export
+- [x] Real-time dashboard with intelligent alerts
+- [x] Key browser with smart tree view
+- [x] Value editor with Monaco and TTL countdown
 - [x] CLI terminal integration
-- [x] Docker containerization
-- [x] CI/CD pipeline
+- [x] Docker containerization with automated builds
+- [x] CI/CD pipeline with Semantic Release
+- [x] Auto-disconnect for inactive connections
+- [x] Bulk delete operations
+- [x] Automatic separator detection
+- [x] System alerts and monitoring
+- [x] Authentication and security
 
 ### 🚧 In Progress
 - [ ] Redis Cluster support
-- [ ] Import/Export functionality
-- [ ] Advanced search filters
-- [ ] Performance profiling
+- [ ] Advanced search filters with regex
+- [ ] Performance profiling and optimization
+- [ ] Multi-platform Docker builds (ARM64)
 
 ### 📋 Planned
 - [ ] Redis Streams visualization
@@ -338,11 +399,14 @@ src/
 
 ## 📊 Project Status
 
-- **Development Status**: Active Development
-- **Stability**: Beta (Production Ready)
-- **Last Updated**: October 2025
+- **Development Status**: ✅ Active Development
+- **Stability**: 🟢 Stable (Production Ready)
+- **Current Version**: v1.16.1
+- **Last Updated**: October 25, 2025
 - **Maintainers**: 1 active maintainer
 - **Contributors**: Open for contributions!
+- **Docker Pulls**: Available on Docker Hub
+- **CI/CD**: Automated releases with semantic versioning
 
 ## License
 

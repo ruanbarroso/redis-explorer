@@ -180,11 +180,18 @@ docs(readme): update installation instructions
 
 ## Release Process
 
-1. Update version in `package.json`
-2. Update `CHANGELOG.md`
-3. Create a pull request
-4. After merge, create a GitHub release
-5. Automated deployment will handle the rest
+We use **Semantic Release** for automated versioning and releases:
+
+1. **Make your changes** following conventional commit format
+2. **Create a pull request** to `main` branch
+3. **After merge**, GitHub Actions will automatically:
+   - Analyze commits to determine version bump
+   - Generate CHANGELOG.md
+   - Create GitHub release with notes
+   - Build and push Docker image to Docker Hub
+   - Tag the release with semantic version
+
+**No manual version updates needed!** The CI/CD pipeline handles everything based on commit messages.
 
 ## Getting Help
 
