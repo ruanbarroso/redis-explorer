@@ -57,8 +57,7 @@
             "path": "CHANGELOG.md",
             "label": "Changelog"
           }
-        ],
-        "releaseBodyTemplate": "## 🚀 Redis Explorer v{{version}}\n\n### 🐳 Docker Images\n- `docker pull ruanbarroso/redis-explorer:{{version}}`\n- `docker pull ruanbarroso/redis-explorer:latest`\n\n### 📦 Multi-platform Support\n- linux/amd64\n- linux/arm64\n\n### 🔧 Quick Start\n```bash\ndocker run -d -p 3000:3000 ruanbarroso/redis-explorer:{{version}}\n```\n\n{{notes}}"
+        ]
       }
     ],
     [
