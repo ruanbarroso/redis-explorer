@@ -45,14 +45,21 @@ jobs:
       run: npx semantic-release
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+        DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
+
+    - name: Get version from package.json
+      if: steps.semantic.conclusion == 'success'
+      id: version
+      run: echo "VERSION=$(node -p "require('./package.json').version")" >> $GITHUB_OUTPUT
 
     - name: Build and push Docker image
-      if: steps.semantic.conclusion == 'success'
+      if: steps.semantic.conclusion == 'success' && steps.version.outputs.VERSION != ''
       uses: docker/build-push-action@v5
       with:
         context: .
-        platforms: linux/amd64
+        platforms: linux/amd64,linux/arm64
         push: true
         tags: |
-          ruanbarroso/redis-explorer:1.3.0
+          ruanbarroso/redis-explorer:${{ steps.version.outputs.VERSION }}
           ruanbarroso/redis-explorer:latest
