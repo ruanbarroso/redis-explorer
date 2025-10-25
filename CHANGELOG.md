@@ -1,3 +1,9 @@
+## [1.16.1](https://github.com/ruanbarroso/redis-explorer/compare/v1.16.0...v1.16.1) (2025-10-25)
+
+### 🐛 Bug Fixes
+
+* remove ARM64 support e adiciona cache para acelerar build Docker ([1df0c08](https://github.com/ruanbarroso/redis-explorer/commit/1df0c08fe2ad7ddbe2b0a5852766f7d37f0a1507))
+
 ## [1.16.0](https://github.com/ruanbarroso/redis-explorer/compare/v1.15.2...v1.16.0) (2025-10-25)
 
 ### 🚀 Features
