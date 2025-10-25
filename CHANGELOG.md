@@ -1,3 +1,9 @@
+## [1.15.1](https://github.com/ruanbarroso/redis-explorer/compare/v1.15.0...v1.15.1) (2025-10-25)
+
+### 🐛 Bug Fixes
+
+* corrige exclusão de pastas filhas no TreeView ([8a21149](https://github.com/ruanbarroso/redis-explorer/commit/8a21149170edbbc9d01902837d98f07c0b0b8b79))
+
 ## [1.15.0](https://github.com/ruanbarroso/redis-explorer/compare/v1.14.0...v1.15.0) (2025-10-24)
 
 ### 🚀 Features
