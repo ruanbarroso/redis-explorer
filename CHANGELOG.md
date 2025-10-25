@@ -1,3 +1,9 @@
+## [1.15.2](https://github.com/ruanbarroso/redis-explorer/compare/v1.15.1...v1.15.2) (2025-10-25)
+
+### 🐛 Bug Fixes
+
+* corrige geração de release notes no GitHub ([057ec97](https://github.com/ruanbarroso/redis-explorer/commit/057ec9784c3153f579d7eb30b1796f0c33eb13a8))
+
 ## [1.15.1](https://github.com/ruanbarroso/redis-explorer/compare/v1.15.0...v1.15.1) (2025-10-25)
 
 ### 🐛 Bug Fixes
