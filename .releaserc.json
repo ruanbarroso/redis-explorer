@@ -36,7 +36,7 @@
           ]
         },
         "writerOpts": {
-          "footerPartial": "\n\n---\n\n## 🐳 Docker Images\n- `docker pull ruanbarroso/redis-explorer:{{version}}`\n- `docker pull ruanbarroso/redis-explorer:latest`\n\n### 📦 Multi-platform Support\n- linux/amd64\n- linux/arm64\n\n### 🔧 Quick Start\n```bash\ndocker run -d -p 3000:3000 ruanbarroso/redis-explorer:{{version}}\n```\n\n### 🔗 Links\n- [Docker Hub](https://hub.docker.com/r/ruanbarroso/redis-explorer/tags)\n- [GitHub Repository](https://github.com/ruanbarroso/redis-explorer)"
+          "footerPartial": "\n\n---\n\n## 🐳 Docker Images\n- `docker pull ruanbarroso/redis-explorer:{{version}}`\n- `docker pull ruanbarroso/redis-explorer:latest`\n\n### 📦 Platform Support\n- linux/amd64\n\n### 🔧 Quick Start\n```bash\ndocker run -d -p 3000:3000 ruanbarroso/redis-explorer:{{version}}\n```\n\n### 🔗 Links\n- [Docker Hub](https://hub.docker.com/r/ruanbarroso/redis-explorer/tags)\n- [GitHub Repository](https://github.com/ruanbarroso/redis-explorer)"
         }
       }
     ],
