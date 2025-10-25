@@ -128,6 +128,10 @@ const TreeView = ({
               if (node.children) {
                 collectKeysFromNodes(node.children);
               }
+            } else if (node.children) {
+              // CORREÇÃO: Continuar buscando recursivamente mesmo que este nó não corresponda
+              // Isso garante que pastas filhas aninhadas sejam encontradas
+              collectKeysFromNodes(node.children);
             }
           });
         };
