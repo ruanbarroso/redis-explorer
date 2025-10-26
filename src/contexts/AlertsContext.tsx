@@ -32,25 +32,28 @@ export function AlertsProvider({ children }: { children: ReactNode }) {
       return;
     }
 
+    // Criar AbortController para timeout
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 segundos de timeout
+
     try {
       const response = await fetch('/api/redis/metrics', {
         credentials: 'include',
+        signal: controller.signal,
       });
 
+      clearTimeout(timeoutId);
+
       if (!response.ok) {
-        if (response.status === 503) {
-          console.error('Redis connection unavailable, redirecting to connections...');
-          handleConnectionError();
-          return;
-        }
-        console.error('Failed to fetch alerts');
+        console.log(`Metrics request failed with status ${response.status}, redirecting to connections...`);
+        handleConnectionError();
         return;
       }
 
       const data = await response.json();
       
       if (data.error) {
-        console.error('Redis error in response:', data.error);
+        console.log('Redis error in response:', data.error);
         handleConnectionError();
         return;
       }
@@ -62,31 +65,54 @@ export function AlertsProvider({ children }: { children: ReactNode }) {
         setHealth(data.metrics.health || 'healthy');
       }
     } catch (err) {
-      console.error('Error fetching alerts:', err);
+      clearTimeout(timeoutId);
       
-      if (err instanceof TypeError && (err as TypeError).message.includes('fetch')) {
-        console.error('Network error, redirecting to connections...');
+      if (err instanceof Error && err.name === 'AbortError') {
+        console.log('Metrics request timeout after 5 seconds, redirecting to connections...');
         handleConnectionError();
+        return;
       }
+      
+      // Qualquer erro de fetch deve redirecionar para conexões
+      console.log('Metrics error, redirecting to connections...');
+      handleConnectionError();
     } finally {
       setIsLoading(false);
     }
   };
 
   useEffect(() => {
+    let isMounted = true;
+    let timeoutId: NodeJS.Timeout;
+
+    const fetchWithDelay = async () => {
+      if (!isMounted || !activeConnection?.connected) {
+        return;
+      }
+
+      await fetchMetrics();
+      
+      // Agendar próxima chamada apenas após a atual terminar
+      if (isMounted && activeConnection?.connected) {
+        timeoutId = setTimeout(fetchWithDelay, 2000);
+      }
+    };
+
     if (activeConnection?.connected) {
       setIsLoading(true);
-      fetchMetrics();
-      
-      // Atualizar métricas a cada 2 segundos
-      const interval = setInterval(fetchMetrics, 2000);
-      
-      return () => clearInterval(interval);
+      fetchWithDelay();
     } else {
       setAlerts([]);
       setMetrics(null);
       setIsLoading(false);
     }
+
+    return () => {
+      isMounted = false;
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
+    };
   }, [activeConnection?.id]);
 
   return (

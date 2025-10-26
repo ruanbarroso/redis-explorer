@@ -83,6 +83,8 @@ const ConnectionSwitcher = ({ onManageConnections }: ConnectionSwitcherProps) =>
     if (activeConnection) {
       await dispatch(disconnectFromRedis(activeConnection.id));
     }
+    // Chamar callback para abrir modal/página de gerenciar conexões
+    onManageConnections();
   };
 
   if (!activeConnection) {

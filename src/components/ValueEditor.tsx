@@ -33,9 +33,10 @@ import {
   Code as CodeIcon,
   TextFields as TextIcon,
 } from '@mui/icons-material';
-import { useDispatch } from 'react-redux';
-import { AppDispatch } from '@/store';
-import { updateValue } from '@/store/slices/keysSlice';
+import { useDispatch, useSelector } from 'react-redux';
+import { AppDispatch, RootState } from '@/store';
+import { updateValue, fetchValue, deleteKey } from '@/store/slices/keysSlice';
+import { useRouter } from 'next/navigation';
 import { RedisValue, RedisDataType } from '@/types/redis';
 import { tryParseAndFormatJson, detectJsonType, getJsonStats } from '@/utils/jsonFormatter';
 import { formatTTL } from '@/utils/timeFormatter';
@@ -44,14 +45,21 @@ import dynamic from 'next/dynamic';
 const MonacoEditor = dynamic(() => import('@monaco-editor/react'), { ssr: false });
 
 interface ValueEditorProps {
-  keyName: string;
-  value: RedisValue;
-  onSave: () => void;
+  keyName?: string;
+  value?: RedisValue;
+  onSave?: () => void;
   onDelete?: () => void;
+  onBack?: () => void;
 }
 
-const ValueEditor = ({ keyName, value, onSave, onDelete }: ValueEditorProps) => {
+const ValueEditor = ({ keyName: propKeyName, value: propValue, onSave: propOnSave, onDelete: propOnDelete, onBack }: ValueEditorProps) => {
   const dispatch = useDispatch<AppDispatch>();
+  const router = useRouter();
+  const { selectedKey, selectedValue } = useSelector((state: RootState) => state.keys);
+  
+  // Usar props ou valores do Redux
+  const keyName = propKeyName || selectedKey || '';
+  const value = propValue || selectedValue || { value: null, type: 'none' as RedisDataType, ttl: -1, size: 0 };
   // Detectar se é uma chave nova (não existe)
   const isNewKey = value.value === null && value.type === 'none';
   const [editedValue, setEditedValue] = useState<any>(isNewKey ? '' : value.value);
@@ -64,6 +72,11 @@ const ValueEditor = ({ keyName, value, onSave, onDelete }: ValueEditorProps) => 
   const [error, setError] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<'raw' | 'json'>('json');
   const [hasChanges, setHasChanges] = useState(isNewKey);
+  const [keyExpired, setKeyExpired] = useState(false); // Flag para rastrear se a chave expirou durante a edição
+  
+  // Detectar se a chave expirou durante a edição
+  // Só considera expirada se foi marcada explicitamente pela flag
+  const isExpiredKey = keyExpired;
 
   const calculateSize = () => {
     if (editedValue === null || editedValue === undefined) return 0;
@@ -82,13 +95,20 @@ const ValueEditor = ({ keyName, value, onSave, onDelete }: ValueEditorProps) => 
     setManualTtlChange(false);
     setHasChanges(isNew);
     setError(null);
+    setKeyExpired(false); // Resetar flag de expiração ao carregar nova chave
   }, [value]);
 
   useEffect(() => {
+    // Se é chave nova (isNewKey) ou expirou, sempre mostra botão salvar
+    if (isNewKey || keyExpired) {
+      setHasChanges(true);
+      return;
+    }
+    
     const valueChanged = JSON.stringify(editedValue) !== JSON.stringify(value.value);
     // Considera mudança de TTL se foi alterado manualmente
     setHasChanges(valueChanged || manualTtlChange);
-  }, [editedValue, manualTtlChange, value]);
+  }, [editedValue, manualTtlChange, value, isNewKey, keyExpired]);
 
   // TTL Countdown - decrementa a cada segundo
   useEffect(() => {
@@ -109,9 +129,10 @@ const ValueEditor = ({ keyName, value, onSave, onDelete }: ValueEditorProps) => 
         if (newTtl === 0) {
           // TTL chegou a zero - chave expirou
           setTtlInput('');
-          // Limpa o valor para simular chave nova
-          setEditedValue('');
-          setHasChanges(true);
+          // Não limpa o valor - mantém o conteúdo para o usuário poder salvar novamente
+          // Marca que a chave expirou durante a edição
+          setKeyExpired(true);
+          // hasChanges será gerenciado pelo useEffect (linha 101-111)
           return -1; // Marca como "no expiry" para nova chave
         } else if (newTtl > 0) {
           setTtlInput(String(newTtl));
@@ -139,9 +160,29 @@ const ValueEditor = ({ keyName, value, onSave, onDelete }: ValueEditorProps) => 
       ).unwrap();
       setHasChanges(false);
       setError(null);
-      onSave();
+      
+      // Chamar callback ou recarregar valor
+      if (propOnSave) {
+        propOnSave();
+      } else {
+        await dispatch(fetchValue(keyName));
+      }
     } catch (err) {
       setError(err as string);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (propOnDelete) {
+      propOnDelete();
+    } else {
+      // Deletar e voltar para browser
+      await dispatch(deleteKey(keyName));
+      if (onBack) {
+        onBack();
+      } else {
+        router.push('/browser');
+      }
     }
   };
 
@@ -345,14 +386,16 @@ const ValueEditor = ({ keyName, value, onSave, onDelete }: ValueEditorProps) => 
           )}
           {hasChanges ? (
             <>
-              <Button 
-                onClick={handleCancel} 
-                size="small"
-                variant="outlined"
-                color="warning"
-              >
-                Cancel
-              </Button>
+              {!isNewKey && !isExpiredKey && (
+                <Button 
+                  onClick={handleCancel} 
+                  size="small"
+                  variant="outlined"
+                  color="warning"
+                >
+                  Cancel
+                </Button>
+              )}
               <Button
                 variant="contained"
                 startIcon={<SaveIcon />}
@@ -373,15 +416,15 @@ const ValueEditor = ({ keyName, value, onSave, onDelete }: ValueEditorProps) => 
               >
                 Add Field
               </Button>
-              {onDelete && (
+              {(propOnDelete || (!isNewKey && !isExpiredKey)) && (
                 <Button
                   variant="outlined"
                   startIcon={<DeleteIcon />}
-                  onClick={onDelete}
+                  onClick={handleDelete}
                   size="small"
                   color="error"
                 >
-                  Remove
+                  Delete Key
                 </Button>
               )}
             </>
@@ -471,14 +514,16 @@ const ValueEditor = ({ keyName, value, onSave, onDelete }: ValueEditorProps) => 
           )}
           {hasChanges ? (
             <>
-              <Button 
-                onClick={handleCancel} 
-                size="small"
-                variant="outlined"
-                color="warning"
-              >
-                Cancel
-              </Button>
+              {!isNewKey && !isExpiredKey && (
+                <Button 
+                  onClick={handleCancel} 
+                  size="small"
+                  variant="outlined"
+                  color="warning"
+                >
+                  Cancel
+                </Button>
+              )}
               <Button
                 variant="contained"
                 startIcon={<SaveIcon />}
@@ -499,11 +544,11 @@ const ValueEditor = ({ keyName, value, onSave, onDelete }: ValueEditorProps) => 
               >
                 Add Item
               </Button>
-              {onDelete && (
+              {(propOnDelete || (!isNewKey && !isExpiredKey)) && (
                 <Button
                   variant="outlined"
                   startIcon={<DeleteIcon />}
-                  onClick={onDelete}
+                  onClick={handleDelete}
                   size="small"
                   color="error"
                 >
@@ -596,14 +641,16 @@ const ValueEditor = ({ keyName, value, onSave, onDelete }: ValueEditorProps) => 
           )}
           {hasChanges ? (
             <>
-              <Button 
-                onClick={handleCancel} 
-                size="small"
-                variant="outlined"
-                color="warning"
-              >
-                Cancel
-              </Button>
+              {!isNewKey && !isExpiredKey && (
+                <Button 
+                  onClick={handleCancel} 
+                  size="small"
+                  variant="outlined"
+                  color="warning"
+                >
+                  Cancel
+                </Button>
+              )}
               <Button
                 variant="contained"
                 startIcon={<SaveIcon />}
@@ -624,11 +671,11 @@ const ValueEditor = ({ keyName, value, onSave, onDelete }: ValueEditorProps) => 
               >
                 Add Member
               </Button>
-              {onDelete && (
+              {(propOnDelete || (!isNewKey && !isExpiredKey)) && (
                 <Button
                   variant="outlined"
                   startIcon={<DeleteIcon />}
-                  onClick={onDelete}
+                  onClick={handleDelete}
                   size="small"
                   color="error"
                 >
@@ -749,8 +796,8 @@ const ValueEditor = ({ keyName, value, onSave, onDelete }: ValueEditorProps) => 
         <Box display="flex" gap={1}>
           {hasChanges ? (
             <>
-              {/* Não mostrar botão Cancel se for chave nova */}
-              {!isNewKey && (
+              {/* Não mostrar botão Cancel se for chave nova ou expirada */}
+              {!isNewKey && !isExpiredKey && (
                 <Button 
                   onClick={handleCancel} 
                   size="small"
@@ -771,16 +818,16 @@ const ValueEditor = ({ keyName, value, onSave, onDelete }: ValueEditorProps) => 
               </Button>
             </>
           ) : (
-            /* Não mostrar botão Delete se for chave nova */
-            !isNewKey && onDelete && (
+            /* Não mostrar botão Delete se for chave nova ou expirada */
+            (propOnDelete || (!isNewKey && !isExpiredKey)) && (
               <Button
                 variant="outlined"
                 startIcon={<DeleteIcon />}
-                onClick={onDelete}
+                onClick={handleDelete}
                 size="small"
                 color="error"
               >
-                Remove
+                Delete Key
               </Button>
             )
           )}

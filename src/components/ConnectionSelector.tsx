@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import {
   Box,
   Card,
@@ -62,11 +63,12 @@ import ConfirmationDialog from './ConfirmationDialog';
 import AuthModals from './AuthModals';
 
 interface ConnectionSelectorProps {
-  onConnectionSuccess: (connection: RedisConnection) => void;
+  onConnectionSuccess?: (connection: RedisConnection) => void;
 }
 
 const ConnectionSelector = ({ onConnectionSuccess }: ConnectionSelectorProps) => {
   const dispatch = useDispatch<AppDispatch>();
+  const router = useRouter();
   const { 
     isAuthenticated, 
     isHydrated,
@@ -135,9 +137,13 @@ const ConnectionSelector = ({ onConnectionSuccess }: ConnectionSelectorProps) =>
   // Check if there's an active connection after loading and redirect if needed
   useEffect(() => {
     if (hasLoadedOnce && activeConnection) {
-      onConnectionSuccess(activeConnection);
+      if (onConnectionSuccess) {
+        onConnectionSuccess(activeConnection);
+      } else {
+        router.push('/dashboard');
+      }
     }
-  }, [hasLoadedOnce, activeConnection, onConnectionSuccess]);
+  }, [hasLoadedOnce, activeConnection, onConnectionSuccess, router]);
 
   // Evita problemas de hidratação - APÓS todos os hooks
   if (!mounted || !isHydrated) {
@@ -174,7 +180,11 @@ const ConnectionSelector = ({ onConnectionSuccess }: ConnectionSelectorProps) =>
     setConnectingId(connection.id);
     try {
       const result = await dispatch(connectToRedis(connection)).unwrap();
-      onConnectionSuccess(result);
+      if (onConnectionSuccess) {
+        onConnectionSuccess(result);
+      } else {
+        router.push('/dashboard');
+      }
     } catch (error) {
       console.error('Connection failed:', error);
       // Clear global error and show user-friendly error message

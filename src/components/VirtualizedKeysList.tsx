@@ -120,9 +120,8 @@ const VirtualizedKeysList = ({
                           sx={{
                             fontFamily: 'monospace',
                             flexGrow: 1,
-                            overflow: 'hidden',
-                            textOverflow: 'ellipsis',
-                            whiteSpace: 'nowrap',
+                            wordBreak: 'break-all',
+                            overflowWrap: 'break-word',
                           }}
                         >
                           {key.name}

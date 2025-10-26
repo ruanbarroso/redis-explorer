@@ -116,17 +116,31 @@ export const connectToRedis = createAsyncThunk(
       await redisClientService.disconnect();
     }
     
-    // Conectar usando o novo endpoint de sessão
-    const response = await fetch('/api/redis/connect-session', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(connection),
-      credentials: 'include', // Importante para enviar cookies
-    });
+    // Conectar usando o novo endpoint de sessão com timeout
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 segundos de timeout
 
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.error || 'Failed to connect');
+    try {
+      const response = await fetch('/api/redis/connect-session', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(connection),
+        credentials: 'include', // Importante para enviar cookies
+        signal: controller.signal,
+      });
+
+      clearTimeout(timeoutId);
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to connect');
+      }
+    } catch (err) {
+      clearTimeout(timeoutId);
+      if (err instanceof Error && err.name === 'AbortError') {
+        throw new Error('Connection timeout after 10 seconds. Please check if Redis server is accessible.');
+      }
+      throw err;
     }
 
     // Também conectar no redisClientService (para keys browser e terminal)
@@ -190,6 +204,12 @@ const connectionSlice = createSlice({
     },
     setConnections: (state, action: PayloadAction<RedisConnection[]>) => {
       state.connections = action.payload;
+    },
+    clearActiveConnection: (state) => {
+      state.activeConnection = null;
+      state.connections.forEach(conn => {
+        conn.connected = false;
+      });
     },
   },
   extraReducers: (builder) => {
@@ -273,7 +293,8 @@ export const {
   removeConnection, 
   updateConnection, 
   clearError,
-  setConnections
+  setConnections,
+  clearActiveConnection
 } = connectionSlice.actions;
 
 export default connectionSlice.reducer;

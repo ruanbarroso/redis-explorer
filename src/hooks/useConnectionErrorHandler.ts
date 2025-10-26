@@ -1,10 +1,12 @@
 import { useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
+import { useRouter } from 'next/navigation';
 import { RootState } from '@/store';
-import { disconnectFromRedis } from '@/store/slices/connectionSlice';
+import { disconnectFromRedis, clearActiveConnection } from '@/store/slices/connectionSlice';
 
 export function useConnectionErrorHandler() {
   const dispatch = useDispatch();
+  const router = useRouter();
   const { activeConnection } = useSelector((state: RootState) => state.connection);
   const [errorModal, setErrorModal] = useState<{
     open: boolean;
@@ -13,7 +15,13 @@ export function useConnectionErrorHandler() {
   }>({ open: false, message: '' });
 
   const handleConnectionError = () => {
-    // Desconectar a conexão ativa
+    // Limpar conexão ativa imediatamente (síncrono)
+    dispatch(clearActiveConnection());
+    
+    // Redirecionar para tela de conexões
+    router.push('/');
+    
+    // Desconectar em background (não bloqueia o redirecionamento)
     if (activeConnection) {
       dispatch(disconnectFromRedis(activeConnection.id));
     }

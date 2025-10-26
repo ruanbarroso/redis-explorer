@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState, useRef } from 'react';
+import { useRouter } from 'next/navigation';
 import {
   Box,
   Grid,
@@ -73,13 +74,15 @@ import { formatTTL } from '@/utils/timeFormatter';
 
 const KeysBrowser = () => {
   const dispatch = useDispatch<AppDispatch>();
+  const router = useRouter();
   const { keys, selectedKey, selectedValue, searchPattern, isLoading, isLoadingValue, isLoadingAllKeys, totalKeys, error, loadingProgress, loadedKeysJson } = useSelector(
     (state: RootState) => state.keys
   );
   const { activeConnection } = useSelector((state: RootState) => state.connection);
+  const listContainerRef = useRef<HTMLDivElement>(null);
+  const [listHeight, setListHeight] = useState(600);
   const [viewMode, setViewMode] = useState<'list' | 'tree'>('tree');
   const [localSearchPattern, setLocalSearchPattern] = useState(searchPattern);
-  const [currentView, setCurrentView] = useState<'navigation' | 'content'>('navigation');
   const [deleteDialog, setDeleteDialog] = useState<{
     open: boolean;
     keyName?: string;
@@ -131,6 +134,27 @@ const KeysBrowser = () => {
     
     handleRefresh();
   }, [activeConnection?.id, activeConnection?.connected]);
+
+  // Calcular altura disponível para a lista
+  useEffect(() => {
+    const updateHeight = () => {
+      if (listContainerRef.current) {
+        const rect = listContainerRef.current.getBoundingClientRect();
+        setListHeight(rect.height);
+      }
+    };
+
+    updateHeight();
+    window.addEventListener('resize', updateHeight);
+    
+    // Pequeno delay para garantir que o layout foi renderizado
+    const timer = setTimeout(updateHeight, 100);
+
+    return () => {
+      window.removeEventListener('resize', updateHeight);
+      clearTimeout(timer);
+    };
+  }, [viewMode, keys.length]);
 
   const handleRefresh = () => {
     if (activeConnection) {
@@ -203,13 +227,8 @@ const KeysBrowser = () => {
   };
 
   const handleKeySelect = (keyName: string) => {
-    dispatch(setSelectedKey(keyName));
-    dispatch(fetchValue(keyName));
-    setCurrentView('content');
-  };
-
-  const handleBackToNavigation = () => {
-    setCurrentView('navigation');
+    // Navegar para a rota de edição
+    router.push(`/browser/edit/${encodeURIComponent(keyName)}`);
   };
 
   const handleGoToKey = () => {
@@ -238,10 +257,6 @@ const KeysBrowser = () => {
   const handleConfirmDelete = async () => {
     if (deleteDialog.type === 'single' && deleteDialog.keyName) {
       await dispatch(deleteKey(deleteDialog.keyName));
-      // Se estamos na visualização de conteúdo, voltar para navegação
-      if (currentView === 'content') {
-        setCurrentView('navigation');
-      }
       handleRefresh();
     } else if (deleteDialog.type === 'bulk' && deleteDialog.keyNames) {
       try {
@@ -292,103 +307,7 @@ const KeysBrowser = () => {
     );
   }
 
-  // Renderização condicional baseada no estado atual
-  if (currentView === 'content' && selectedKey) {
-    return (
-      <Box height="100%" display="flex" flexDirection="column">
-        {/* Header da visualização de conteúdo */}
-        <Box
-          display="flex"
-          alignItems="flex-start"
-          gap={1}
-          mb={2}
-          sx={{ flexShrink: 0 }}
-        >
-          <IconButton onClick={handleBackToNavigation} sx={{ mt: 0.5 }}>
-            <ArrowBackIcon />
-          </IconButton>
-          <Typography 
-            variant="h6" 
-            sx={{ 
-              flexGrow: 1, 
-              wordBreak: 'break-all',
-              overflowWrap: 'break-word',
-              lineHeight: 1.4
-            }}
-          >
-            {selectedKey}
-          </Typography>
-        </Box>
-
-        {/* Conteúdo da chave em tela cheia */}
-        <Box sx={{ flexGrow: 1, minHeight: 0 }}>
-          {isLoadingValue ? (
-            <Box display="flex" justifyContent="center" alignItems="center" height="100%">
-              <CircularProgress />
-            </Box>
-          ) : selectedValue ? (
-            <ValueEditor 
-              keyName={selectedKey}
-              value={selectedValue}
-              onSave={() => {
-                handleRefresh();
-                dispatch(fetchValue(selectedKey));
-              }}
-              onDelete={() => {
-                console.log('🗑️ Botão excluir clicado na visualização de conteúdo para:', selectedKey);
-                handleKeyDelete(selectedKey);
-              }}
-            />
-          ) : (
-            <Box display="flex" justifyContent="center" alignItems="center" height="100%">
-              <Typography color="text.secondary">
-                Failed to load value for key: {selectedKey}
-              </Typography>
-            </Box>
-          )}
-        </Box>
-
-        {/* Modal de Confirmação de Delete - Sempre renderizado */}
-        <Dialog
-          open={deleteDialog.open}
-          onClose={() => setDeleteDialog({ open: false, type: 'single' })}
-          aria-labelledby="delete-dialog-title"
-          aria-describedby="delete-dialog-description"
-        >
-          <DialogTitle id="delete-dialog-title" sx={{ color: 'error.main' }}>
-            Confirmar Exclusão
-          </DialogTitle>
-          <DialogContent>
-            <DialogContentText id="delete-dialog-description">
-              {deleteDialog.type === 'single' && deleteDialog.keyName ? (
-                <>Tem certeza que deseja excluir a chave <strong>"{deleteDialog.keyName}"</strong>?</>
-              ) : deleteDialog.type === 'bulk' && deleteDialog.keyNames ? (
-                <>Tem certeza que deseja excluir <strong>{deleteDialog.keyNames.length} chave{deleteDialog.keyNames.length > 1 ? 's' : ''}</strong>?</>
-              ) : null}
-              <br /><br />
-              Esta ação não pode ser desfeita.
-            </DialogContentText>
-          </DialogContent>
-          <DialogActions>
-            <Button 
-              onClick={() => setDeleteDialog({ open: false, type: 'single' })}
-              color="inherit"
-            >
-              Cancelar
-            </Button>
-            <Button 
-              onClick={handleConfirmDelete}
-              color="error"
-              variant="contained"
-              autoFocus
-            >
-              Excluir
-            </Button>
-          </DialogActions>
-        </Dialog>
-      </Box>
-    );
-  }
+  // Renderização condicional removida - agora usa rotas
 
   return (
     <Box height="100%" display="flex" flexDirection="column">
@@ -491,7 +410,7 @@ const KeysBrowser = () => {
             )}
           </Box>
 
-          <Box sx={{ flexGrow: 1, minHeight: 0, overflow: 'hidden' }}>
+          <Box ref={listContainerRef} sx={{ flexGrow: 1, minHeight: 0, overflow: 'hidden' }}>
             {isLoading || isLoadingAllKeys ? (
               <Box display="flex" justifyContent="center" alignItems="center" height="100%">
                 <CircularProgress />
@@ -515,7 +434,7 @@ const KeysBrowser = () => {
                 selectedKey={selectedKey}
                 onKeySelect={handleKeySelect}
                 onKeyDelete={handleKeyDelete}
-                height={600} // Fixed height for virtualization
+                height={listHeight} // Altura dinâmica calculada
               />
             )}
               </Box>
@@ -630,6 +549,45 @@ const KeysBrowser = () => {
                 disabled={!goToKeyDialog.keyName.trim()}
               >
                 Abrir
+              </Button>
+            </DialogActions>
+          </Dialog>
+
+          {/* Delete Confirmation Modal */}
+          <Dialog
+            open={deleteDialog.open}
+            onClose={() => setDeleteDialog({ open: false, type: 'single' })}
+            aria-labelledby="delete-dialog-title"
+            aria-describedby="delete-dialog-description"
+          >
+            <DialogTitle id="delete-dialog-title" sx={{ color: 'error.main' }}>
+              Confirmar Exclusão
+            </DialogTitle>
+            <DialogContent>
+              <DialogContentText id="delete-dialog-description">
+                {deleteDialog.type === 'single' && deleteDialog.keyName ? (
+                  <>Tem certeza que deseja excluir a chave <strong>"{deleteDialog.keyName}"</strong>?</>
+                ) : deleteDialog.type === 'bulk' && deleteDialog.keyNames ? (
+                  <>Tem certeza que deseja excluir <strong>{deleteDialog.keyNames.length} chave{deleteDialog.keyNames.length > 1 ? 's' : ''}</strong>?</>
+                ) : null}
+                <br /><br />
+                Esta ação não pode ser desfeita.
+              </DialogContentText>
+            </DialogContent>
+            <DialogActions>
+              <Button 
+                onClick={() => setDeleteDialog({ open: false, type: 'single' })}
+                color="inherit"
+              >
+                Cancelar
+              </Button>
+              <Button 
+                onClick={handleConfirmDelete}
+                color="error"
+                variant="contained"
+                autoFocus
+              >
+                Excluir
               </Button>
             </DialogActions>
           </Dialog>
