@@ -26,6 +26,7 @@ import {
   Notifications as NotificationsIcon,
   Speed as SlowLogIcon,
   Monitor as MonitorIcon,
+  Settings as SettingsIcon,
 } from '@mui/icons-material';
 import { useSelector } from 'react-redux';
 import { useRouter, usePathname } from 'next/navigation';
@@ -89,6 +90,7 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
     { id: 'browser', label: 'Keys Browser', icon: <StorageIcon />, path: '/browser' },
     { id: 'monitor', label: 'Monitor', icon: <MonitorIcon />, path: '/monitor' },
     { id: 'terminal', label: 'CLI', icon: <TerminalIcon />, path: '/terminal' },
+    { id: 'settings', label: 'Configurações', icon: <SettingsIcon />, path: '/settings' },
   ];
 
   const handleDrawerToggle = () => {

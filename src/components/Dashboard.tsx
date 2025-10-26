@@ -307,18 +307,6 @@ const Dashboard = () => {
           />
         </Grid>
       </Grid>
-
-      {/* Server Info */}
-      {metrics && (
-        <Box mt={4} p={2} bgcolor="background.paper" borderRadius={1}>
-          <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-            Server Info
-          </Typography>
-          <Typography variant="caption" color="text.secondary">
-            Redis {metrics.server.version} • {metrics.server.mode} • {metrics.server.os} • PID: {metrics.server.processId}
-          </Typography>
-        </Box>
-      )}
     </Box>
   );
 };
