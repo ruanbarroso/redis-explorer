@@ -1,0 +1,197 @@
+import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
+import { RedisStats, RedisInfo, SlowLogEntry } from '@/types/redis';
+import { redisApiService } from '@/services/redis-api';
+
+export interface RedisStatsResponse {
+  stats: RedisStats;
+  clients: any[];
+  slowLog: SlowLogEntry[];
+}
+
+interface StatsState {
+  stats: RedisStats | null;
+  info: RedisInfo | null;
+  slowLog: SlowLogEntry[];
+  isLoading: boolean;
+  error: string | null;
+  derivedCpuPercent: number | null;
+  lastUpdated: string | null;
+  clientRttP50: number | null;
+  clientRttP95: number | null;
+  evictionsPerSec: number | null;
+  expiredPerSec: number | null;
+  rejectedConnPerSec: number | null;
+}
+
+const initialState: StatsState = {
+  stats: null,
+  info: null,
+  slowLog: [],
+  isLoading: false,
+  error: null,
+  derivedCpuPercent: null,
+  lastUpdated: null,
+  clientRttP50: null,
+  clientRttP95: null,
+  evictionsPerSec: null,
+  expiredPerSec: null,
+  rejectedConnPerSec: null,
+};
+
+export const fetchStats = createAsyncThunk(
+  'stats/fetchStats',
+  async (_, { rejectWithValue }) => {
+    try {
+      const [stats, info, slowLog] = await Promise.all([
+        redisApiService.getStats(),
+        redisApiService.getInfo(),
+        redisApiService.getSlowLog(10)
+      ]);
+
+      return {
+        stats,
+        info,
+        slowLog,
+        clients: [] // TODO: Implementar busca de clients se necessário
+      };
+    } catch (error) {
+      console.error('Failed to fetch stats:', error);
+      const errorMsg = error instanceof Error ? error.message : 'Failed to fetch stats';
+      
+      if (errorMsg.includes('No active Redis connection') || 
+          errorMsg.includes('NETWORK_ERROR') || 
+          errorMsg.includes('BACKEND_HTTP_502') || 
+          errorMsg.includes('BACKEND_HTTP_503')) {
+        return rejectWithValue('REDIRECT_TO_CONNECTIONS');
+      }
+      
+      return rejectWithValue(errorMsg);
+    }
+  }
+);
+
+export const fetchInfo = createAsyncThunk(
+  'stats/fetchInfo',
+  async () => {
+    return await redisApiService.getInfo();
+  }
+);
+
+export const fetchSlowLog = createAsyncThunk(
+  'stats/fetchSlowLog',
+  async (count: number = 10) => {
+    return await redisApiService.getSlowLog(count);
+  }
+);
+
+const statsSlice = createSlice({
+  name: 'stats',
+  initialState,
+  reducers: {
+    clearStats: (state) => {
+      state.stats = null;
+      state.info = null;
+      state.slowLog = [];
+      state.derivedCpuPercent = null;
+      state.clientRttP50 = null;
+      state.clientRttP95 = null;
+      state.evictionsPerSec = null;
+      state.expiredPerSec = null;
+      state.rejectedConnPerSec = null;
+      state.lastUpdated = null;
+    },
+    clearError: (state) => {
+      state.error = null;
+    },
+  },
+  extraReducers: (builder) => {
+    builder
+      .addCase(fetchStats.pending, (state) => {
+        state.isLoading = true;
+        state.error = null;
+      })
+      .addCase(fetchStats.fulfilled, (state, action) => {
+        state.isLoading = false;
+        state.stats = action.payload.stats;
+        state.info = action.payload.info;
+        state.slowLog = action.payload.slowLog;
+        
+        // Calcular métricas derivadas
+        if (action.payload.stats) {
+          const cpu = action.payload.stats.instantaneousCpuPercent;
+          state.derivedCpuPercent = Number.isFinite(cpu as number) ? (cpu as number) : null;
+          state.lastUpdated = new Date().toLocaleTimeString();
+          
+          // Extrair métricas de latência do stats ou info
+          const p50 = action.payload.stats.latencyP50 || action.payload.info?.latency?.p50;
+          const p95 = action.payload.stats.latencyP95 || action.payload.info?.latency?.p95;
+          
+          state.clientRttP50 = Number.isFinite(p50 as number) ? (p50 as number) : null;
+          state.clientRttP95 = Number.isFinite(p95 as number) ? (p95 as number) : null;
+          
+          // Calcular rates por segundo (assumindo refresh de 5s)
+          const refreshInterval = 5;
+          const ev = action.payload.stats.evictedKeys;
+          const ex = action.payload.stats.expiredKeys;
+          const rj = action.payload.stats.rejectedConnections;
+          
+          state.evictionsPerSec = Number.isFinite(ev as number) ? (ev as number) / refreshInterval : null;
+          state.expiredPerSec = Number.isFinite(ex as number) ? (ex as number) / refreshInterval : null;
+          state.rejectedConnPerSec = Number.isFinite(rj as number) ? (rj as number) / refreshInterval : null;
+        }
+      })
+      .addCase(fetchStats.rejected, (state, action) => {
+        state.isLoading = false;
+        state.error = action.payload as string || 'Failed to fetch stats';
+        
+        // Se for um erro de conexão, limpar os dados
+        if (action.payload === 'REDIRECT_TO_CONNECTIONS') {
+          state.stats = null;
+          state.info = null;
+          state.slowLog = [];
+        }
+      })
+      .addCase(fetchInfo.fulfilled, (state, action) => {
+        state.info = action.payload;
+        
+        // Fallback para CPU: calcula média desde o início quando não houver instantâneo
+        if (!Number.isFinite(state.derivedCpuPercent as number) && action.payload) {
+          const usedSys = parseFloat(action.payload.used_cpu_sys || '0');
+          const uptime = parseInt(action.payload.uptime_in_seconds || '0', 10);
+          
+          if (uptime > 0) {
+            const avg = Math.min((usedSys / uptime) * 100, 100);
+            state.derivedCpuPercent = Number.isFinite(avg) ? avg : state.derivedCpuPercent;
+          }
+        }
+      })
+      .addCase(fetchSlowLog.fulfilled, (state, action) => {
+        if (action.payload) {
+          state.slowLog = action.payload;
+          
+          // Fallback para latência: usa os durations do slowlog (us) para estimar p50/p95
+          const durationsUs = action.payload
+            .map((entry: any) => entry.duration || (entry as any).duration)
+            .filter((v: any) => v !== undefined && v !== null && Number.isFinite(Number(v)));
+            
+          if (durationsUs.length > 0) {
+            const sorted = [...durationsUs].sort((a: number, b: number) => a - b);
+            const p = (q: number) => {
+              const idx = Math.floor((q / 100) * (sorted.length - 1));
+              return sorted[Math.max(0, Math.min(sorted.length - 1, idx))];
+            };
+            
+            const p50ms = p(50) / 1000; // us -> ms
+            const p95ms = p(95) / 1000;
+            
+            if (!Number.isFinite(state.clientRttP50 as number)) state.clientRttP50 = p50ms;
+            if (!Number.isFinite(state.clientRttP95 as number)) state.clientRttP95 = p95ms;
+          }
+        }
+      });
+  },
+});
+
+export const { clearStats, clearError } = statsSlice.actions;
+
+export default statsSlice.reducer;

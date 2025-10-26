@@ -1,0 +1,49 @@
+import { useRouter } from 'next/navigation';
+
+export function useConnectionErrorHandler() {
+  const router = useRouter();
+
+  const handleConnectionError = () => {
+    if (typeof window !== 'undefined') {
+      window.location.href = '/connections';
+    } else {
+      router.push('/connections');
+    }
+  };
+
+  const handleFetchError = async (response: Response) => {
+    // Erro 503 - Redis não conectado
+    if (response.status === 503) {
+      console.error('Redis connection unavailable (503), redirecting to connections...');
+      handleConnectionError();
+      return true;
+    }
+
+    // Erro 500 - Pode ser erro de conexão
+    if (response.status === 500) {
+      try {
+        const data = await response.json();
+        if (data.error && (
+          data.error.includes('Connection is closed') ||
+          data.error.includes('No active Redis connection') ||
+          data.error.includes('No session found')
+        )) {
+          console.error('Redis connection error (500), redirecting to connections...');
+          handleConnectionError();
+          return true;
+        }
+      } catch (e) {
+        // Se não conseguir processar o erro, faz o redirecionamento de qualquer forma
+        handleConnectionError();
+        return true;
+      }
+    }
+    
+    return false; // Erro não tratado
+  };
+
+  return {
+    handleFetchError,
+    handleConnectionError
+  };
+}

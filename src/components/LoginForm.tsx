@@ -71,14 +71,19 @@ const LoginForm = ({ onLoginSuccess }: LoginFormProps) => {
       bgcolor="background.default"
       p={3}
     >
-      <Card sx={{ maxWidth: 400, width: '100%' }}>
-        <CardContent sx={{ p: 4 }}>
-          <Box display="flex" flexDirection="column" alignItems="center" mb={3}>
-            <StorageIcon sx={{ fontSize: 48, color: 'primary.main', mb: 2 }} />
-            <Typography variant="h5" align="center" gutterBottom>
+      <Card elevation={3} sx={{ maxWidth: 400, width: '100%' }}>
+        <CardContent>
+          <Box
+            display="flex"
+            flexDirection="column"
+            alignItems="center"
+            mb={3}
+          >
+            <StorageIcon sx={{ fontSize: 60, color: 'primary.main', mb: 1 }} />
+            <Typography variant="h5" component="h1" gutterBottom>
               Redis Explorer
             </Typography>
-            <Typography variant="body2" color="text.secondary" align="center">
+            <Typography variant="subtitle1" color="textSecondary">
               Digite sua senha para acessar
             </Typography>
           </Box>

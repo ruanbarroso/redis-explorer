@@ -2,22 +2,20 @@
 
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { useSelector } from 'react-redux';
-import { RootState } from '@/store';
 import { useAuth } from '@/hooks/useAuth';
 import { useIsClient } from '@/hooks/useIsClient';
 import LoadingScreen from '@/components/LoadingScreen';
-import Dashboard from '@/components/Dashboard';
+import LoginForm from '@/components/LoginForm';
 
-export default function DashboardPage() {
+export default function LoginPage() {
   const router = useRouter();
   const isClient = useIsClient();
-  const { activeConnection } = useSelector((state: RootState) => state.connection);
   const { 
     isAuthenticated, 
     isLoading, 
     hasPassword, 
-    isHydrated 
+    isHydrated, 
+    refreshAuth 
   } = useAuth();
 
   // Redirect based on auth state
@@ -26,17 +24,26 @@ export default function DashboardPage() {
 
     if (!hasPassword) {
       router.replace('/setup');
-    } else if (!isAuthenticated) {
-      router.replace('/login');
-    } else if (!activeConnection) {
+    } else if (isAuthenticated) {
       router.replace('/connections');
     }
-  }, [isAuthenticated, hasPassword, activeConnection, isHydrated, isLoading, router]);
+  }, [isAuthenticated, hasPassword, isHydrated, isLoading, router]);
 
   // Show loading while checking auth state
-  if (!isClient || !isHydrated || isLoading || !isAuthenticated || !activeConnection) {
+  if (!isClient || !isHydrated || isLoading || !hasPassword || isAuthenticated) {
     return <LoadingScreen />;
   }
 
-  return <Dashboard />;
+  const handleLoginSuccess = async () => {
+    await refreshAuth();
+    router.push('/connections');
+  };
+
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-gray-100">
+      <div className="bg-white p-8 rounded-lg shadow-md w-full max-w-md">
+        <LoginForm onLoginSuccess={handleLoginSuccess} />
+      </div>
+    </div>
+  );
 }
