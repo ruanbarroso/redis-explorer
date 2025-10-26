@@ -92,6 +92,7 @@ const KeysBrowser = () => {
     open: boolean;
     keyName: string;
   }>({ open: false, keyName: '' });
+  const goToKeyInputRef = useRef<HTMLInputElement>(null);
   const {
     treeNodes,
     viewMode,
@@ -159,6 +160,13 @@ const KeysBrowser = () => {
       clearTimeout(timer);
     };
   }, [viewMode, keys.length]);
+
+  // Função para focar no input após a transição do Dialog
+  const handleDialogEntered = () => {
+    if (goToKeyInputRef.current) {
+      goToKeyInputRef.current.focus();
+    }
+  };
 
   const handleRefresh = () => {
     if (activeConnection) {
@@ -325,31 +333,25 @@ const KeysBrowser = () => {
       <Card sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
         <CardContent sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
           <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
-            <Typography variant="h6">Keys</Typography>
+            <ToggleButtonGroup
+              value={viewMode}
+              exclusive
+              onChange={(_, newMode) => newMode && setViewMode(newMode)}
+              size="small"
+            >
+              <ToggleButton value="tree">
+                <Tooltip title="Tree View">
+                  <TreeViewIcon />
+                </Tooltip>
+              </ToggleButton>
+              <ToggleButton value="list">
+                <Tooltip title="List View">
+                  <ViewListIcon />
+                </Tooltip>
+              </ToggleButton>
+            </ToggleButtonGroup>
+            
             <Box display="flex" gap={1} alignItems="center">
-              <ToggleButtonGroup
-                value={viewMode}
-                exclusive
-                onChange={(_, newMode) => newMode && setViewMode(newMode)}
-                size="small"
-              >
-                <ToggleButton value="list">
-                  <Tooltip title="List View">
-                    <ViewListIcon />
-                  </Tooltip>
-                </ToggleButton>
-                <ToggleButton value="tree">
-                  <Tooltip title="Tree View">
-                    <TreeViewIcon />
-                  </Tooltip>
-                </ToggleButton>
-              </ToggleButtonGroup>
-              
-              <Tooltip title="Refresh (1000 keys)">
-                <IconButton onClick={handleRefresh} disabled={isLoading || loadingProgress.isActive}>
-                  <RefreshIcon />
-                </IconButton>
-              </Tooltip>
               <Tooltip title="Download All Keys">
                 <IconButton 
                   onClick={handleLoadAllKeys} 
@@ -513,6 +515,7 @@ const KeysBrowser = () => {
           <Dialog
             open={goToKeyDialog.open}
             onClose={() => setGoToKeyDialog({ open: false, keyName: '' })}
+            onTransitionEnd={handleDialogEntered}
             aria-labelledby="go-to-key-dialog-title"
             maxWidth="sm"
             fullWidth
@@ -525,7 +528,7 @@ const KeysBrowser = () => {
                 Digite o nome exato da chave que deseja visualizar:
               </DialogContentText>
               <TextField
-                autoFocus
+                inputRef={goToKeyInputRef}
                 fullWidth
                 label="Nome da Chave"
                 placeholder="ex: user:123"

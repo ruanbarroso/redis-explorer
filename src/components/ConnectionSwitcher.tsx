@@ -20,6 +20,7 @@ import {
   Settings as SettingsIcon,
 } from '@mui/icons-material';
 import { useDispatch, useSelector } from 'react-redux';
+import { useRouter, usePathname } from 'next/navigation';
 import { RootState, AppDispatch } from '@/store';
 import { connectToRedis, disconnectFromRedis, clearError, loadConnections } from '@/store/slices/connectionSlice';
 import { RedisConnection } from '@/types/redis';
@@ -32,6 +33,8 @@ interface ConnectionSwitcherProps {
 
 const ConnectionSwitcher = ({ onManageConnections }: ConnectionSwitcherProps) => {
   const dispatch = useDispatch<AppDispatch>();
+  const router = useRouter();
+  const pathname = usePathname();
   const { connections, activeConnection, isConnecting } = useSelector(
     (state: RootState) => state.connection
   );
@@ -62,6 +65,10 @@ const ConnectionSwitcher = ({ onManageConnections }: ConnectionSwitcherProps) =>
   const handleConnectionSelect = async (connection: RedisConnection) => {
     if (connection.id !== activeConnection?.id) {
       try {
+        // Se estiver na tela de edição de chave, redirecionar para /browser
+        if (pathname?.startsWith('/browser/edit/')) {
+          router.push('/browser');
+        }
         await dispatch(connectToRedis(connection)).unwrap();
       } catch (error) {
         console.error('Failed to switch connection:', error);
@@ -218,6 +225,7 @@ const ConnectionSwitcher = ({ onManageConnections }: ConnectionSwitcherProps) =>
       {/* Error Dialog */}
       <ErrorDialog
         open={errorDialog.open}
+        message={errorDialog.message}
         onClose={() => setErrorDialog({ open: false, message: '' })}
       />
     </Box>

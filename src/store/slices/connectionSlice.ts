@@ -110,11 +110,7 @@ export const connectToRedis = createAsyncThunk(
   'connection/connect',
   async (connection: RedisConnection, { getState, dispatch }) => {
     const state = getState() as { connection: ConnectionState };
-    
-    // Disconnect from previous connection if exists
-    if (state.connection.activeConnection) {
-      await redisClientService.disconnect();
-    }
+    const previousConnection = state.connection.activeConnection;
     
     // Conectar usando o novo endpoint de sessão com timeout
     const controller = new AbortController();
@@ -143,9 +139,14 @@ export const connectToRedis = createAsyncThunk(
       throw err;
     }
 
-    // Também conectar no redisClientService (para keys browser e terminal)
+    // Conectar no redisClientService (para keys browser e terminal)
+    // Não precisa desconectar antes porque o SessionManager já gerencia isso no backend
     const success = await redisClientService.connect(connection);
     if (!success) {
+      // Se falhar, reconectar na conexão anterior para manter o metrics funcionando
+      if (previousConnection) {
+        await redisClientService.connect(previousConnection);
+      }
       throw new Error(`Não foi possível conectar ao Redis em ${connection.host}:${connection.port}. Verifique se o servidor está rodando e as credenciais estão corretas.`);
     }
     

@@ -54,10 +54,8 @@ class SessionManager {
         }
       }
       
-      // Desconectar da conexão anterior se for diferente
-      if (session.connectionId && session.connectionId !== connection.id) {
-        await this.decrementConnectionUsage(session.connectionId);
-      }
+      // Guardar connectionId anterior para desconectar depois
+      const previousConnectionId = session.connectionId !== connection.id ? session.connectionId : null;
       
       // Verificar se já existe uma conexão para este connectionId
       let connData = this.connections.get(connection.id);
@@ -74,6 +72,7 @@ class SessionManager {
           lazyConnect: true,
         });
 
+        // Tentar conectar - se falhar, lança erro e não altera nada
         await redis.connect();
         
         connData = {
@@ -83,13 +82,21 @@ class SessionManager {
         this.connections.set(connection.id, connData);
       }
       
-      // Incrementar contador de sessões usando esta conexão
+      // APENAS se chegou aqui, a conexão foi bem-sucedida
+      // Agora sim podemos atualizar a session e incrementar contador
       connData.sessionCount++;
       session.connectionId = connection.id;
+      
+      // Só desconectar da conexão anterior DEPOIS que a nova foi bem-sucedida
+      if (previousConnectionId) {
+        await this.decrementConnectionUsage(previousConnectionId);
+      }
       
       return true;
     } catch (error) {
       console.error(`SessionManager: Error connecting session ${sessionId}:`, error);
+      // Se der erro, a session.connectionId NÃO foi alterada
+      // A conexão anterior permanece ativa
       throw error;
     }
   }

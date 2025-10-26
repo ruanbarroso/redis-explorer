@@ -45,8 +45,11 @@ export function AlertsProvider({ children }: { children: ReactNode }) {
       clearTimeout(timeoutId);
 
       if (!response.ok) {
-        console.log(`Metrics request failed with status ${response.status}, redirecting to connections...`);
-        handleConnectionError();
+        console.log(`Metrics request failed with status ${response.status}`);
+        // Apenas redireciona se for erro 503 (serviço indisponível)
+        if (response.status === 503) {
+          handleConnectionError();
+        }
         return;
       }
 
@@ -54,7 +57,10 @@ export function AlertsProvider({ children }: { children: ReactNode }) {
       
       if (data.error) {
         console.log('Redis error in response:', data.error);
-        handleConnectionError();
+        // Apenas redireciona se for erro crítico de conexão
+        if (data.error.includes('Connection is closed') || data.error.includes('No active Redis connection')) {
+          handleConnectionError();
+        }
         return;
       }
       
@@ -68,14 +74,14 @@ export function AlertsProvider({ children }: { children: ReactNode }) {
       clearTimeout(timeoutId);
       
       if (err instanceof Error && err.name === 'AbortError') {
-        console.log('Metrics request timeout after 5 seconds, redirecting to connections...');
-        handleConnectionError();
+        console.log('Metrics request timeout after 5 seconds');
+        // Timeout não significa que a conexão está ruim, apenas que demorou
+        // Não desconecta automaticamente
         return;
       }
       
-      // Qualquer erro de fetch deve redirecionar para conexões
-      console.log('Metrics error, redirecting to connections...');
-      handleConnectionError();
+      // Erro de rede pode ser temporário, não desconecta automaticamente
+      console.log('Metrics error:', err);
     } finally {
       setIsLoading(false);
     }

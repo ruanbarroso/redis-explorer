@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { Box, IconButton, Typography, CircularProgress } from '@mui/material';
 import { ArrowBack as ArrowBackIcon } from '@mui/icons-material';
@@ -16,19 +16,23 @@ export default function EditKeyPage() {
   const { selectedKey, selectedValue, isLoadingValue } = useSelector(
     (state: RootState) => state.keys
   );
+  const hasFetchedRef = useRef<string | null>(null);
 
   // Decodificar a chave da URL
   const keyName = decodeURIComponent(params.key as string);
 
   useEffect(() => {
     // Sempre buscar o valor ao acessar a página, para garantir dados atualizados
-    if (keyName) {
+    // Usar ref para evitar chamadas duplicadas em Strict Mode
+    if (keyName && hasFetchedRef.current !== keyName) {
+      hasFetchedRef.current = keyName;
       // Limpar valor anterior para evitar mostrar valor errado
       dispatch(setSelectedKey(null));
       dispatch(setSelectedKey(keyName));
       dispatch(fetchValue(keyName));
     }
-  }, [keyName, dispatch]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [keyName]);
 
   const handleBack = () => {
     router.push('/browser');
