@@ -16,10 +16,11 @@ export function tryParseAndFormatJson(value: string): JsonFormatResult {
   // Remove leading/trailing whitespace
   const trimmed = value.trim();
   
-  // Quick check if it looks like JSON
+  // Quick check if it looks like JSON (object, array, or string)
   if (
     !(trimmed.startsWith('{') && trimmed.endsWith('}')) &&
-    !(trimmed.startsWith('[') && trimmed.endsWith(']'))
+    !(trimmed.startsWith('[') && trimmed.endsWith(']')) &&
+    !(trimmed.startsWith('"') && trimmed.endsWith('"'))
   ) {
     return {
       isJson: false,

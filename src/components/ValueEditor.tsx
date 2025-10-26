@@ -70,7 +70,7 @@ const ValueEditor = ({ keyName: propKeyName, value: propValue, onSave: propOnSav
   const [dialogOpen, setDialogOpen] = useState(false);
   const [newField, setNewField] = useState({ key: '', value: '' });
   const [error, setError] = useState<string | null>(null);
-  const [viewMode, setViewMode] = useState<'raw' | 'json'>('json');
+  const [viewMode, setViewMode] = useState<'raw' | 'json'>('raw');
   const [hasChanges, setHasChanges] = useState(isNewKey);
   const [keyExpired, setKeyExpired] = useState(false); // Flag para rastrear se a chave expirou durante a edição
   
@@ -227,8 +227,32 @@ const ValueEditor = ({ keyName: propKeyName, value: propValue, onSave: propOnSav
 
   const renderStringEditor = () => {
     const jsonResult = tryParseAndFormatJson(editedValue || '');
-    const displayValue = viewMode === 'json' && jsonResult.isJson ? jsonResult.formatted : (editedValue || '');
-    const language = viewMode === 'json' && jsonResult.isJson ? 'json' : 'text';
+    // Se for string JSON e estiver em modo JSON, mostrar o valor parseado sem aspas
+    const isJsonString = jsonResult.isJson && typeof jsonResult.parsed === 'string';
+    const displayValue = viewMode === 'json' && jsonResult.isJson 
+      ? (isJsonString ? jsonResult.parsed : jsonResult.formatted)
+      : (editedValue || '');
+    const language = viewMode === 'json' && jsonResult.isJson ? (isJsonString ? 'text' : 'json') : 'text';
+
+    // Handler para onChange que converte de volta para JSON string se necessário
+    const handleEditorChange = (value: string | undefined) => {
+      const newValue = value || '';
+      // Se estiver editando uma string JSON na visão formatada, adicionar aspas de volta
+      if (viewMode === 'json' && isJsonString) {
+        setEditedValue(JSON.stringify(newValue));
+      } else if (viewMode === 'json' && jsonResult.isJson) {
+        // Se estiver editando JSON object/array na visão formatada, minificar ao salvar
+        try {
+          const parsed = JSON.parse(newValue);
+          setEditedValue(JSON.stringify(parsed)); // Minificado (sem espaços)
+        } catch {
+          // Se não for JSON válido, manter como está
+          setEditedValue(newValue);
+        }
+      } else {
+        setEditedValue(newValue);
+      }
+    };
 
     return (
       <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
@@ -242,14 +266,14 @@ const ValueEditor = ({ keyName: propKeyName, value: propValue, onSave: propOnSav
                 onChange={(_, newMode) => newMode && setViewMode(newMode)}
                 size="small"
               >
-                <ToggleButton value="json">
-                  <Tooltip title="JSON Format">
-                    <CodeIcon />
-                  </Tooltip>
-                </ToggleButton>
                 <ToggleButton value="raw">
                   <Tooltip title="Raw Text">
                     <TextIcon />
+                  </Tooltip>
+                </ToggleButton>
+                <ToggleButton value="json">
+                  <Tooltip title={isJsonString ? "String Format" : "JSON Format"}>
+                    <CodeIcon />
                   </Tooltip>
                 </ToggleButton>
               </ToggleButtonGroup>
@@ -258,7 +282,7 @@ const ValueEditor = ({ keyName: propKeyName, value: propValue, onSave: propOnSav
             {jsonResult.isJson && (
               <Box display="flex" gap={1}>
                 <Chip 
-                  label={`JSON ${detectJsonType(jsonResult.parsed)}`} 
+                  label={typeof jsonResult.parsed === 'string' ? 'String' : `JSON ${detectJsonType(jsonResult.parsed)}`} 
                   size="small" 
                   color="success" 
                 />
@@ -331,14 +355,15 @@ const ValueEditor = ({ keyName: propKeyName, value: propValue, onSave: propOnSav
             language={language}
             theme="vs-dark"
             value={displayValue}
-            onChange={(value) => setEditedValue(value || '')}
+            onChange={handleEditorChange}
             options={{
               readOnly: false,
               minimap: { enabled: false },
-              scrollBeyondLastLine: false,
+              scrollBeyondLastLine: true,
               wordWrap: 'on',
               formatOnPaste: jsonResult.isJson,
               formatOnType: jsonResult.isJson,
+              padding: { top: 10, bottom: 10 },
             }}
           />
         </Box>
