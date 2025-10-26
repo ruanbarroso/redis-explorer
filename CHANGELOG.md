@@ -1,3 +1,9 @@
+## [1.18.1](https://github.com/ruanbarroso/redis-explorer/compare/v1.18.0...v1.18.1) (2025-10-26)
+
+### 🐛 Bug Fixes
+
+* manter conexão atual ao falhar troca de conexão ([c65e2e7](https://github.com/ruanbarroso/redis-explorer/commit/c65e2e77ff45be3856208d6cd30290d8180398d7))
+
 ## [1.18.0](https://github.com/ruanbarroso/redis-explorer/compare/v1.17.0...v1.18.0) (2025-10-26)
 
 ### 🚀 Features
