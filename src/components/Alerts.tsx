@@ -110,43 +110,33 @@ const Alerts = () => {
 
   return (
     <Box sx={{ height: '100%', overflow: 'auto', p: 3 }}>
-      {/* Header */}
-      <Box mb={3}>
-        <Typography variant="h5" fontWeight={700} gutterBottom>
-          Alertas do Sistema
-        </Typography>
-        <Typography variant="body2" color="text.secondary">
-          Monitoramento em tempo real do estado do Redis
-        </Typography>
-        
-        {/* Summary Chips */}
-        <Stack direction="row" spacing={1} mt={2}>
-          {criticalCount > 0 && (
-            <Chip
-              icon={<ErrorIcon />}
-              label={`${criticalCount} Crítico${criticalCount > 1 ? 's' : ''}`}
-              color="error"
-              size="small"
-            />
-          )}
-          {warningCount > 0 && (
-            <Chip
-              icon={<WarningIcon />}
-              label={`${warningCount} Aviso${warningCount > 1 ? 's' : ''}`}
-              color="warning"
-              size="small"
-            />
-          )}
-          {infoCount > 0 && (
-            <Chip
-              icon={<InfoIcon />}
-              label={`${infoCount} Info${infoCount > 1 ? 's' : ''}`}
-              color="info"
-              size="small"
-            />
-          )}
-        </Stack>
-      </Box>
+      {/* Summary Chips */}
+      <Stack direction="row" spacing={1} mb={3}>
+        {criticalCount > 0 && (
+          <Chip
+            icon={<ErrorIcon />}
+            label={`${criticalCount} Crítico${criticalCount > 1 ? 's' : ''}`}
+            color="error"
+            size="small"
+          />
+        )}
+        {warningCount > 0 && (
+          <Chip
+            icon={<WarningIcon />}
+            label={`${warningCount} Aviso${warningCount > 1 ? 's' : ''}`}
+            color="warning"
+            size="small"
+          />
+        )}
+        {infoCount > 0 && (
+          <Chip
+            icon={<InfoIcon />}
+            label={`${infoCount} Info${infoCount > 1 ? 's' : ''}`}
+            color="info"
+            size="small"
+          />
+        )}
+      </Stack>
 
       {/* Alerts List */}
       <Stack spacing={2}>

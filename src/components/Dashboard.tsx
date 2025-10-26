@@ -60,20 +60,6 @@ const Dashboard = () => {
 
   return (
     <Box sx={{ height: '100%', overflow: 'auto', p: 3 }}>
-      {/* Header */}
-      <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
-        <Box>
-          <Typography variant="h5" fontWeight={700}>
-            Redis Dashboard
-          </Typography>
-          {metrics && (
-            <Typography variant="caption" color="text.secondary">
-              Última atualização: {new Date(metrics.timestamp).toLocaleTimeString()}
-            </Typography>
-          )}
-        </Box>
-      </Box>
-
       {/* Métricas Críticas (Tier 1) */}
       <Typography variant="h6" fontWeight={600} mb={2} color="error.main">
         Métricas Críticas

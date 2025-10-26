@@ -190,21 +190,6 @@ const Terminal = () => {
         </Alert>
       )}
 
-      <Box 
-        display="flex" 
-        justifyContent="space-between" 
-        alignItems="center" 
-        mb={2}
-        sx={{ flexShrink: 0 }}
-      >
-        <Typography variant="h5">Redis CLI</Typography>
-        <Box display="flex" gap={1}>
-          <IconButton onClick={clearHistory} disabled={history.length === 0}>
-            <ClearIcon />
-          </IconButton>
-        </Box>
-      </Box>
-
       <Card sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
         <CardContent sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column', p: 0, minHeight: 0 }}>
           {/* Command History */}
