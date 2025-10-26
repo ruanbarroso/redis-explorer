@@ -1,3 +1,13 @@
+## [1.21.0](https://github.com/ruanbarroso/redis-explorer/compare/v1.20.0...v1.21.0) (2025-10-26)
+
+### 🚀 Features
+
+* add settings page and improve dashboard ([a3c9460](https://github.com/ruanbarroso/redis-explorer/commit/a3c94608c85d1ce542df2a6601b5a323b692301d))
+
+### ♻️ Code Refactoring
+
+* remove page titles from Dashboard, Alerts and CLI ([e2d659c](https://github.com/ruanbarroso/redis-explorer/commit/e2d659ca03c8415b32f0169f24963894468a4715))
+
 ## [1.20.0](https://github.com/ruanbarroso/redis-explorer/compare/v1.19.0...v1.20.0) (2025-10-26)
 
 ### 🚀 Features
