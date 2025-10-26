@@ -192,100 +192,114 @@ export class MetricsService {
         metric: 'CPU',
         message: 'CPU usage elevado - considere otimizar comandos',
         value: `${metrics.cpu.percentage.toFixed(1)}%`,
-        threshold: `${t.cpu.warning}%`,
+        threshold: '75% - 90%',
       });
     }
 
     // Memory Alerts
-    if (metrics.memoryUsage.max > 0) {
-      if (metrics.memoryUsage.percentage >= t.memory.critical) {
+    if (metrics.memoryUsage.max && metrics.memoryUsage.max > 0) {
+      const memPercent = metrics.memoryUsage.percentage;
+      if (memPercent > 90) {
         alerts.push({
           level: 'critical',
-          metric: 'Memory',
-          message: 'Memória crítica - risco de evictions ou OOM',
-          value: `${metrics.memoryUsage.percentage.toFixed(1)}%`,
-          threshold: `${t.memory.critical}%`,
+          metric: 'Memory Usage',
+          message: 'Uso de memória crítico (>90%). Risco iminente de eviction.',
+          value: `${memPercent.toFixed(1)}%`,
+          threshold: '> 90%',
         });
-      } else if (metrics.memoryUsage.percentage >= t.memory.warning) {
+      } else if (memPercent >= 75) {
         alerts.push({
           level: 'warning',
-          metric: 'Memory',
-          message: 'Uso de memória elevado - planeje scaling',
-          value: `${metrics.memoryUsage.percentage.toFixed(1)}%`,
-          threshold: `${t.memory.warning}%`,
+          metric: 'Memory Usage',
+          message: 'Uso de memória elevado (75%-90%). Planeje aumento de memória ou otimização.',
+          value: `${memPercent.toFixed(1)}%`,
+          threshold: '75% - 90%',
         });
       }
     }
 
     // Memory Fragmentation Alerts
-    if (metrics.memoryFragmentation.ratio >= t.memoryFragmentation.critical) {
+    const fragRatio = metrics.memoryFragmentation.ratio;
+    if (fragRatio > 3) {
       alerts.push({
         level: 'critical',
         metric: 'Memory Fragmentation',
-        message: 'Fragmentação crítica - considere restart do Redis',
-        value: metrics.memoryFragmentation.ratio.toFixed(2),
-        threshold: t.memoryFragmentation.critical.toFixed(1),
+        message: 'Fragmentação muito alta (>3.0). Recomenda-se reiniciar o processo Redis.',
+        value: fragRatio.toFixed(2),
+        threshold: '> 3.0',
       });
-    } else if (metrics.memoryFragmentation.ratio >= t.memoryFragmentation.warning) {
+    } else if (fragRatio > 1.5) {
       alerts.push({
         level: 'warning',
         metric: 'Memory Fragmentation',
-        message: 'Fragmentação elevada - monitore de perto',
-        value: metrics.memoryFragmentation.ratio.toFixed(2),
-        threshold: t.memoryFragmentation.warning.toFixed(1),
-      });
-    } else if (metrics.memoryFragmentation.ratio < t.memoryFragmentation.low) {
-      alerts.push({
-        level: 'critical',
-        metric: 'Memory Fragmentation',
-        message: 'Redis usando swap - performance degradada',
-        value: metrics.memoryFragmentation.ratio.toFixed(2),
-        threshold: `< ${t.memoryFragmentation.low}`,
+        message: 'Fragmentação elevada (>1.5). Considere restart em janela de manutenção.',
+        value: fragRatio.toFixed(2),
+        threshold: '> 1.5',
       });
     }
 
     // Cache Hit Ratio Alerts
-    if (metrics.cacheHitRatio < t.cacheHitRatio.critical) {
+    if (metrics.cacheHitRatio < 80) {
       alerts.push({
         level: 'critical',
         metric: 'Cache Hit Ratio',
-        message: 'Hit ratio crítico - possível thrashing',
+        message: 'Hit ratio crítico (<80%). Cache ineficiente, revise maxmemory e TTLs.',
         value: `${metrics.cacheHitRatio.toFixed(1)}%`,
-        threshold: `< ${t.cacheHitRatio.critical}%`,
+        threshold: '< 80%',
       });
-    } else if (metrics.cacheHitRatio < t.cacheHitRatio.warning) {
+    } else if (metrics.cacheHitRatio <= 90) {
       alerts.push({
         level: 'warning',
         metric: 'Cache Hit Ratio',
-        message: 'Hit ratio baixo - cache pode estar pequeno',
+        message: 'Hit ratio em queda (80%-90%). Investigue padrão de acesso antes que piore.',
         value: `${metrics.cacheHitRatio.toFixed(1)}%`,
-        threshold: `< ${t.cacheHitRatio.warning}%`,
+        threshold: '80% - 90%',
       });
     }
 
     // Latency Alerts
+    if (metrics.latency.p50 !== null) {
+      if (metrics.latency.p50 > 10) {
+        alerts.push({
+          level: 'critical',
+          metric: 'Latency P50',
+          message: 'Latência P50 crítica (>10ms). Respostas estão lentas para a maioria das requisições.',
+          value: `${metrics.latency.p50.toFixed(2)}ms`,
+          threshold: '> 10ms',
+        });
+      } else if (metrics.latency.p50 >= 1) {
+        alerts.push({
+          level: 'warning',
+          metric: 'Latency P50',
+          message: 'Latência P50 elevada (1-10ms). Monitore comandos lentos e gargalos.',
+          value: `${metrics.latency.p50.toFixed(2)}ms`,
+          threshold: '1ms - 10ms',
+        });
+      }
+    }
+
     if (metrics.latency.p95 !== null) {
-      if (metrics.latency.p95 >= t.latencyP95.critical) {
+      if (metrics.latency.p95 > 20) {
         alerts.push({
           level: 'critical',
           metric: 'Latency P95',
-          message: 'Latência crítica - performance degradada',
+          message: 'Latência P95 crítica (>20ms). Verifique comandos lentos ou gargalos.',
           value: `${metrics.latency.p95.toFixed(2)}ms`,
-          threshold: `>= ${t.latencyP95.critical}ms`,
+          threshold: '> 20ms',
         });
-      } else if (metrics.latency.p95 >= t.latencyP95.warning) {
+      } else if (metrics.latency.p95 >= 5) {
         alerts.push({
           level: 'warning',
           metric: 'Latency P95',
-          message: 'Latência elevada - investigue comandos lentos',
+          message: 'Latência P95 elevada (5-20ms). Investigação recomendada.',
           value: `${metrics.latency.p95.toFixed(2)}ms`,
-          threshold: `>= ${t.latencyP95.warning}ms`,
+          threshold: '5ms - 20ms',
         });
       }
     }
 
     // Rejected Connections Alert
-    if (metrics.connections.rejected > t.connections.rejectedWarning) {
+    if (metrics.connections.rejected > 10) {
       alerts.push({
         level: 'warning',
         metric: 'Rejected Connections',

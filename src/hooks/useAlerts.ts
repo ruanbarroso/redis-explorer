@@ -16,16 +16,16 @@ export const useAlerts = (stats: RedisStats | null) => {
     // Memory usage critical
     if (stats.maxMemory && stats.maxMemory > 0) {
       const memPercent = (stats.usedMemory / stats.maxMemory) * 100;
-      if (memPercent >= 90) {
+      if (memPercent > 90) {
         alertList.push({
           severity: 'critical',
-          message: `Memory usage at ${memPercent.toFixed(1)}% (critical threshold: 90%)`,
+          message: `Memory usage at ${memPercent.toFixed(1)}% (critical > 90%)`,
           metric: 'memory'
         });
-      } else if (memPercent >= 80) {
+      } else if (memPercent >= 75) {
         alertList.push({
           severity: 'warning',
-          message: `Memory usage at ${memPercent.toFixed(1)}% (warning threshold: 80%)`,
+          message: `Memory usage at ${memPercent.toFixed(1)}% (warning 75% - 90%)`,
           metric: 'memory'
         });
       }
@@ -33,16 +33,16 @@ export const useAlerts = (stats: RedisStats | null) => {
     
     // Fragmentation ratio
     if (stats.memoryFragmentationRatio) {
-      if (stats.memoryFragmentationRatio >= 1.5) {
+      if (stats.memoryFragmentationRatio > 3) {
         alertList.push({
           severity: 'critical',
-          message: `High memory fragmentation: ${stats.memoryFragmentationRatio.toFixed(2)}`,
+          message: `High memory fragmentation: ${stats.memoryFragmentationRatio.toFixed(2)} (>3.0)` ,
           metric: 'fragmentation'
         });
-      } else if (stats.memoryFragmentationRatio >= 1.4) {
+      } else if (stats.memoryFragmentationRatio > 1.5) {
         alertList.push({
           severity: 'warning',
-          message: `Memory fragmentation elevated: ${stats.memoryFragmentationRatio.toFixed(2)}`,
+          message: `Memory fragmentation elevated: ${stats.memoryFragmentationRatio.toFixed(2)} (>1.5)` ,
           metric: 'fragmentation'
         });
       }
@@ -52,16 +52,16 @@ export const useAlerts = (stats: RedisStats | null) => {
     const totalOps = stats.keyspaceHits + stats.keyspaceMisses;
     if (totalOps > 0) {
       const hitRate = (stats.keyspaceHits / totalOps) * 100;
-      if (hitRate < 60) {
+      if (hitRate < 80) {
         alertList.push({
           severity: 'critical',
-          message: `Low cache hit rate: ${hitRate.toFixed(1)}%`,
+          message: `Low cache hit rate: ${hitRate.toFixed(1)}% (<80%)`,
           metric: 'hitrate'
         });
-      } else if (hitRate < 80) {
+      } else if (hitRate <= 90) {
         alertList.push({
           severity: 'warning',
-          message: `Cache hit rate below optimal: ${hitRate.toFixed(1)}%`,
+          message: `Cache hit rate below ideal: ${hitRate.toFixed(1)}% (80% - 90%)`,
           metric: 'hitrate'
         });
       }

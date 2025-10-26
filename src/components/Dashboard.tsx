@@ -74,13 +74,13 @@ const Dashboard = () => {
             color={
               !metrics
                 ? 'primary'
-                : metrics.cacheHitRatio >= 80
+                : metrics.cacheHitRatio > 90
                 ? 'success'
-                : metrics.cacheHitRatio >= 50
+                : metrics.cacheHitRatio >= 80
                 ? 'warning'
                 : 'error'
             }
-            tooltip="Percentual de requisições atendidas pelo cache. Ideal: >80%. Crítico: <50%. Um valor baixo indica que o cache está pequeno ou há muitas evictions."
+            tooltip="Percentual de requisições atendidas pelo cache. Saudável: >90%. Alerta: 80% - 90%. Crítico: <80%."
             loading={isLoading}
           />
         </Grid>
@@ -98,13 +98,13 @@ const Dashboard = () => {
             color={
               !metrics || !metrics.memoryUsage?.max
                 ? 'primary'
-                : metrics.memoryUsage.percentage >= 80
+                : metrics.memoryUsage.percentage > 90
                 ? 'error'
-                : metrics.memoryUsage.percentage >= 70
+                : metrics.memoryUsage.percentage >= 75
                 ? 'warning'
                 : 'success'
             }
-            tooltip="Uso de memória atual. Warning: ≥70%. Critical: ≥80%. Para workloads non-caching, monitore de perto a partir de 80% para evitar OOM."
+            tooltip="Uso de memória atual. Saudável: <75%. Alerta: 75% - 90%. Crítico: >90%."
             loading={isLoading}
           />
         </Grid>
@@ -118,15 +118,15 @@ const Dashboard = () => {
             color={
               !metrics
                 ? 'primary'
-                : metrics.memoryFragmentation.ratio < 1.0
+                : metrics.memoryFragmentation.ratio >= 3
                 ? 'error'
-                : metrics.memoryFragmentation.ratio >= 1.5
-                ? 'error'
-                : metrics.memoryFragmentation.ratio >= 1.4
+                : metrics.memoryFragmentation.ratio > 1.5
                 ? 'warning'
-                : 'success'
+                : metrics.memoryFragmentation.ratio >= 1.0
+                ? 'success'
+                : 'warning'
             }
-            tooltip="Razão entre memória física (RSS) e memória usada. Ideal: 1.0-1.4. <1.0: Redis usando swap (crítico). >1.5: Fragmentação alta, considere restart."
+            tooltip="Razão entre memória física (RSS) e memória usada. Saudável: 1.0 - 1.5. Alerta: >1.5 e <3.0. Crítico: >3.0."
             loading={isLoading}
           />
         </Grid>
@@ -140,13 +140,13 @@ const Dashboard = () => {
             color={
               !metrics
                 ? 'primary'
-                : metrics.cpu.percentage >= 80
+                : metrics.cpu.percentage > 80
                 ? 'error'
-                : metrics.cpu.percentage >= 65
+                : metrics.cpu.percentage >= 50
                 ? 'warning'
                 : 'success'
             }
-            tooltip="Uso de CPU do processo Redis. Warning: ≥65%. Critical: ≥80%. Redis é single-threaded, valores altos indicam comandos ineficientes ou alto throughput."
+            tooltip="Uso de CPU do processo Redis. Saudável: <50%. Alerta: 50% - 80%. Crítico: >80%."
             loading={isLoading}
           />
         </Grid>
@@ -160,13 +160,13 @@ const Dashboard = () => {
             color={
               !metrics || !metrics.latency || metrics.latency.p50 === null
                 ? 'primary'
-                : metrics.latency.p50 < 1
-                ? 'success'
-                : metrics.latency.p50 < 5
+                : metrics.latency.p50 > 10
+                ? 'error'
+                : metrics.latency.p50 >= 1
                 ? 'warning'
-                : 'error'
+                : 'success'
             }
-            tooltip="Latência mediana (P50) das operações. Redis deve operar em sub-millisecond. Valores >1ms indicam possíveis problemas de performance."
+            tooltip="Mediana de latência (P50). Saudável: <1ms. Alerta: 1ms - 10ms. Crítico: >10ms."
             loading={isLoading}
           />
         </Grid>
@@ -180,13 +180,13 @@ const Dashboard = () => {
             color={
               !metrics || !metrics.latency || metrics.latency.p95 === null
                 ? 'primary'
-                : metrics.latency.p95 >= 10
+                : metrics.latency.p95 > 20
                 ? 'error'
                 : metrics.latency.p95 >= 5
                 ? 'warning'
                 : 'success'
             }
-            tooltip="Latência P95 das operações. Warning: ≥5ms. Critical: ≥10ms. Valores altos indicam comandos lentos ou sobrecarga."
+            tooltip="Latência P95 das operações. Saudável: <5ms. Alerta: 5ms - 20ms. Crítico: >20ms."
             loading={isLoading}
           />
         </Grid>
