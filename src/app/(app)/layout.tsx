@@ -24,6 +24,8 @@ import {
   Logout as LogoutIcon,
   VpnKey as ChangePasswordIcon,
   Notifications as NotificationsIcon,
+  Speed as SlowLogIcon,
+  Monitor as MonitorIcon,
 } from '@mui/icons-material';
 import { useSelector } from 'react-redux';
 import { useRouter, usePathname } from 'next/navigation';
@@ -83,7 +85,9 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
   const menuItems = [
     { id: 'dashboard', label: 'Dashboard', icon: <DashboardIcon />, path: '/dashboard' },
     { id: 'alerts', label: 'Alertas', icon: <NotificationsIcon />, badge: alertCount, path: '/alerts' },
+    { id: 'slowlog', label: 'Slow Log', icon: <SlowLogIcon />, path: '/slowlog' },
     { id: 'browser', label: 'Keys Browser', icon: <StorageIcon />, path: '/browser' },
+    { id: 'monitor', label: 'Monitor', icon: <MonitorIcon />, path: '/monitor' },
     { id: 'terminal', label: 'CLI', icon: <TerminalIcon />, path: '/terminal' },
   ];
 
