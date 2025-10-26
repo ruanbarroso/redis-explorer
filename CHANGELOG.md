@@ -1,3 +1,9 @@
+## [1.20.0](https://github.com/ruanbarroso/redis-explorer/compare/v1.19.0...v1.20.0) (2025-10-26)
+
+### 🚀 Features
+
+* implement Monitor and SlowLog features with pagination ([546a50c](https://github.com/ruanbarroso/redis-explorer/commit/546a50ce6d9faf875b6e28e14dd0fdd9533d923d))
+
 ## [1.19.0](https://github.com/ruanbarroso/redis-explorer/compare/v1.18.1...v1.19.0) (2025-10-26)
 
 ### 🚀 Features
