@@ -1,13 +1,8 @@
 import { useState } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
 import { useRouter } from 'next/navigation';
-import { RootState } from '@/store';
-import { disconnectFromRedis, clearActiveConnection } from '@/store/slices/connectionSlice';
 
 export function useConnectionErrorHandler() {
-  const dispatch = useDispatch();
   const router = useRouter();
-  const { activeConnection } = useSelector((state: RootState) => state.connection);
   const [errorModal, setErrorModal] = useState<{
     open: boolean;
     message: string;
@@ -15,16 +10,8 @@ export function useConnectionErrorHandler() {
   }>({ open: false, message: '' });
 
   const handleConnectionError = () => {
-    // Limpar conexão ativa imediatamente (síncrono)
-    dispatch(clearActiveConnection());
-    
-    // Redirecionar para tela de conexões
-    router.push('/');
-    
-    // Desconectar em background (não bloqueia o redirecionamento)
-    if (activeConnection) {
-      dispatch(disconnectFromRedis(activeConnection.id));
-    }
+    // Apenas redireciona para a tela de conexões
+    router.push('/connections');
   };
 
   const showErrorModal = (message: string, details?: string) => {
@@ -39,7 +26,7 @@ export function useConnectionErrorHandler() {
     // Erro 503 - Redis não conectado
     if (response.status === 503) {
       console.error('Redis connection unavailable (503), redirecting to connections...');
-      handleConnectionError();
+      router.push('/connections');
       return true; // Erro tratado
     }
 
@@ -55,7 +42,7 @@ export function useConnectionErrorHandler() {
             data.error.includes('No session found')
           ) {
             console.error('Redis connection error (500), redirecting to connections...');
-            handleConnectionError();
+            router.push('/connections');
             return true; // Erro tratado
           }
           
