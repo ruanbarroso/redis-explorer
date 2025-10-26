@@ -12,6 +12,9 @@ interface KeysState {
   isLoadingAllKeys: boolean;
   totalKeys: number | null;
   error: string | null;
+  // Tree view state
+  viewMode: 'list' | 'tree';
+  treeExpandedNodes: string[];
   // Progress state
   loadingProgress: {
     isActive: boolean;
@@ -38,6 +41,8 @@ const initialState: KeysState = {
   isLoadingValue: false,
   isLoadingAllKeys: false,
   totalKeys: null,
+  viewMode: 'tree',
+  treeExpandedNodes: [],
   error: null,
   loadingProgress: {
     isActive: false,
@@ -124,9 +129,35 @@ const keysSlice = createSlice({
       state.keys = [];
       state.selectedKey = null;
       state.selectedValue = null;
+      state.searchPattern = '*';
+      state.treeExpandedNodes = [];
     },
     clearError: (state) => {
       state.error = null;
+    },
+    setViewMode: (state, action: PayloadAction<'list' | 'tree'>) => {
+      state.viewMode = action.payload;
+    },
+    toggleTreeNode: (state, action: PayloadAction<string>) => {
+      const nodePath = action.payload;
+      const index = state.treeExpandedNodes.indexOf(nodePath);
+      if (index > -1) {
+        state.treeExpandedNodes.splice(index, 1);
+      } else {
+        state.treeExpandedNodes.push(nodePath);
+      }
+    },
+    expandTreeNodes: (state, action: PayloadAction<string[]>) => {
+      action.payload.forEach(path => {
+        if (!state.treeExpandedNodes.includes(path)) {
+          state.treeExpandedNodes.push(path);
+        }
+      });
+    },
+    collapseTreeNodes: (state, action: PayloadAction<string[]>) => {
+      state.treeExpandedNodes = state.treeExpandedNodes.filter(
+        path => !action.payload.includes(path)
+      );
     },
     setLoadingProgress: (state, action: PayloadAction<{
       isActive: boolean;
@@ -271,7 +302,7 @@ const keysSlice = createSlice({
   },
 });
 
-export const { setSearchPattern, setSelectedKey, clearKeys, clearError, setLoadingProgress, resetLoadingProgress, setKeys, setTotalKeys, setLoadedKeysJson, clearLoadedKeysJson, decrementTTLs, removeExpiredKeys, removeKeysLocally } =
+export const { setSearchPattern, setSelectedKey, clearKeys, clearError, setViewMode, toggleTreeNode, expandTreeNodes, collapseTreeNodes, setLoadingProgress, resetLoadingProgress, setKeys, setTotalKeys, setLoadedKeysJson, clearLoadedKeysJson, decrementTTLs, removeExpiredKeys, removeKeysLocally } =
   keysSlice.actions;
 
 export default keysSlice.reducer;

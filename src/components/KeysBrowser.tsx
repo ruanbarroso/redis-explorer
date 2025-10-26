@@ -81,7 +81,6 @@ const KeysBrowser = () => {
   const { activeConnection } = useSelector((state: RootState) => state.connection);
   const listContainerRef = useRef<HTMLDivElement>(null);
   const [listHeight, setListHeight] = useState(600);
-  const [viewMode, setViewMode] = useState<'list' | 'tree'>('tree');
   const [localSearchPattern, setLocalSearchPattern] = useState(searchPattern);
   const [deleteDialog, setDeleteDialog] = useState<{
     open: boolean;
@@ -95,6 +94,8 @@ const KeysBrowser = () => {
   }>({ open: false, keyName: '' });
   const {
     treeNodes,
+    viewMode,
+    setViewMode,
     detectedSeparator,
     customSeparator,
     setCustomSeparator,
@@ -132,7 +133,10 @@ const KeysBrowser = () => {
     lastConnectionIdRef.current = activeConnection.id;
     isInitialLoadRef.current = false;
     
-    handleRefresh();
+    // Só recarregar se não houver chaves carregadas
+    if (keys.length === 0) {
+      handleRefresh();
+    }
   }, [activeConnection?.id, activeConnection?.connected]);
 
   // Calcular altura disponível para a lista

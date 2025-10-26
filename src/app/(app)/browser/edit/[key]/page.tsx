@@ -2,7 +2,7 @@
 
 import { useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { Box, IconButton, Typography } from '@mui/material';
+import { Box, IconButton, Typography, CircularProgress } from '@mui/material';
 import { ArrowBack as ArrowBackIcon } from '@mui/icons-material';
 import { useDispatch, useSelector } from 'react-redux';
 import { RootState, AppDispatch } from '@/store';
@@ -23,6 +23,8 @@ export default function EditKeyPage() {
   useEffect(() => {
     // Sempre buscar o valor ao acessar a página, para garantir dados atualizados
     if (keyName) {
+      // Limpar valor anterior para evitar mostrar valor errado
+      dispatch(setSelectedKey(null));
       dispatch(setSelectedKey(keyName));
       dispatch(fetchValue(keyName));
     }
@@ -43,7 +45,13 @@ export default function EditKeyPage() {
         </Typography>
       </Box>
       <Box sx={{ flexGrow: 1, overflow: 'hidden' }}>
-        <ValueEditor onBack={handleBack} />
+        {isLoadingValue ? (
+          <Box display="flex" justifyContent="center" alignItems="center" height="100%">
+            <CircularProgress />
+          </Box>
+        ) : (
+          <ValueEditor onBack={handleBack} />
+        )}
       </Box>
     </Box>
   );

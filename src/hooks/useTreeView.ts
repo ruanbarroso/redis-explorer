@@ -1,12 +1,21 @@
 import { useState, useMemo } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
 import { RedisKey } from '@/types/redis';
 import { TreeNode } from '@/types/tree';
 import { TreeBuilder } from '@/utils/treeBuilder';
+import { RootState, AppDispatch } from '@/store';
+import { toggleTreeNode, expandTreeNodes, collapseTreeNodes, setViewMode as setViewModeAction } from '@/store/slices/keysSlice';
 
 export function useTreeView(keys: RedisKey[], initialSeparator?: string) {
-  const [expandedNodes, setExpandedNodes] = useState<Set<string>>(new Set());
-  const [viewMode, setViewMode] = useState<'list' | 'tree'>('tree');
+  const dispatch = useDispatch<AppDispatch>();
+  const expandedNodesArray = useSelector((state: RootState) => state.keys.treeExpandedNodes);
+  const expandedNodes = useMemo(() => new Set(expandedNodesArray), [expandedNodesArray]);
+  const viewMode = useSelector((state: RootState) => state.keys.viewMode);
   const [customSeparator, setCustomSeparator] = useState<string | undefined>(initialSeparator);
+  
+  const setViewMode = (mode: 'list' | 'tree') => {
+    dispatch(setViewModeAction(mode));
+  };
 
   // Auto-detect separator if not provided - force recalculation
   const detectedSeparator = useMemo(() => {
@@ -26,53 +35,45 @@ export function useTreeView(keys: RedisKey[], initialSeparator?: string) {
   }, [keys, activeSeparator, viewMode]);
 
   const toggleExpand = (nodeId: string) => {
-    setExpandedNodes(prev => {
-      const newSet = new Set(prev);
-      if (newSet.has(nodeId)) {
-        newSet.delete(nodeId);
-      } else {
-        newSet.add(nodeId);
-      }
-      return newSet;
-    });
+    dispatch(toggleTreeNode(nodeId));
   };
 
   const expandAll = () => {
-    const allNodeIds = new Set<string>();
+    const allNodeIds: string[] = [];
     
     const collectNodeIds = (nodes: TreeNode[]) => {
       nodes.forEach(node => {
         if (node.type === 'folder' && node.children) {
-          allNodeIds.add(node.id);
+          allNodeIds.push(node.id);
           collectNodeIds(node.children);
         }
       });
     };
     
     collectNodeIds(treeNodes);
-    setExpandedNodes(allNodeIds);
+    dispatch(expandTreeNodes(allNodeIds));
   };
 
   const collapseAll = () => {
-    setExpandedNodes(new Set());
+    dispatch(collapseTreeNodes(expandedNodesArray));
   };
 
   const expandToKey = (keyPath: string) => {
     const parts = keyPath.split(activeSeparator);
-    const nodesToExpand = new Set<string>();
+    const nodesToExpand: string[] = [];
     
     let currentPath = '';
     parts.slice(0, -1).forEach(part => {
       currentPath = currentPath ? `${currentPath}${activeSeparator}${part}` : part;
-      nodesToExpand.add(currentPath);
+      nodesToExpand.push(currentPath);
     });
     
-    setExpandedNodes(prev => new Set([...prev, ...nodesToExpand]));
+    dispatch(expandTreeNodes(nodesToExpand));
   };
 
   const expandAllChildren = (parentNodeId: string) => {
     console.log('🌳 Expandindo todos os filhos de:', parentNodeId);
-    const childNodeIds = new Set<string>();
+    const childNodeIds: string[] = [];
     
     const findAndCollectChildren = (nodes: TreeNode[], targetId: string): boolean => {
       for (const node of nodes) {
@@ -81,7 +82,7 @@ export function useTreeView(keys: RedisKey[], initialSeparator?: string) {
           const collectAllChildren = (childNodes: TreeNode[]) => {
             childNodes.forEach(child => {
               if (child.type === 'folder' && child.children) {
-                childNodeIds.add(child.id);
+                childNodeIds.push(child.id);
                 collectAllChildren(child.children);
               }
             });
@@ -103,16 +104,15 @@ export function useTreeView(keys: RedisKey[], initialSeparator?: string) {
     findAndCollectChildren(treeNodes, parentNodeId);
     
     // Adiciona o próprio nó pai à lista de nós para expandir
-    childNodeIds.add(parentNodeId);
+    childNodeIds.push(parentNodeId);
     
-    console.log('✅ Nós encontrados para expandir (incluindo pai):', Array.from(childNodeIds));
-    // Adiciona os novos nós expandidos aos já existentes
-    setExpandedNodes(prev => new Set([...prev, ...childNodeIds]));
+    console.log('✅ Nós encontrados para expandir (incluindo pai):', childNodeIds);
+    dispatch(expandTreeNodes(childNodeIds));
   };
 
   const collapseAllChildren = (parentNodeId: string) => {
     console.log('🌳 Colapsando todos os filhos de:', parentNodeId);
-    const childNodeIds = new Set<string>();
+    const childNodeIds: string[] = [];
     
     const findAndCollectChildren = (nodes: TreeNode[], targetId: string): boolean => {
       for (const node of nodes) {
@@ -121,7 +121,7 @@ export function useTreeView(keys: RedisKey[], initialSeparator?: string) {
           const collectAllChildren = (childNodes: TreeNode[]) => {
             childNodes.forEach(child => {
               if (child.type === 'folder' && child.children) {
-                childNodeIds.add(child.id);
+                childNodeIds.push(child.id);
                 collectAllChildren(child.children);
               }
             });
@@ -143,15 +143,10 @@ export function useTreeView(keys: RedisKey[], initialSeparator?: string) {
     findAndCollectChildren(treeNodes, parentNodeId);
     
     // Adiciona o próprio nó pai à lista de nós para colapsar
-    childNodeIds.add(parentNodeId);
+    childNodeIds.push(parentNodeId);
     
-    console.log('✅ Nós encontrados para colapsar (incluindo pai):', Array.from(childNodeIds));
-    // Remove os nós filhos dos expandidos
-    setExpandedNodes(prev => {
-      const newSet = new Set(prev);
-      childNodeIds.forEach(id => newSet.delete(id));
-      return newSet;
-    });
+    console.log('✅ Nós encontrados para colapsar (incluindo pai):', childNodeIds);
+    dispatch(collapseTreeNodes(childNodeIds));
   };
 
   return {
