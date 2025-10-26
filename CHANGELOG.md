@@ -1,3 +1,9 @@
+## [1.18.0](https://github.com/ruanbarroso/redis-explorer/compare/v1.17.0...v1.18.0) (2025-10-26)
+
+### 🚀 Features
+
+* persistir estado de navegação e melhorar UX ([7db51e5](https://github.com/ruanbarroso/redis-explorer/commit/7db51e54f0d1483c2f3b716fef9d9a1d8235cef7))
+
 ## [1.17.0](https://github.com/ruanbarroso/redis-explorer/compare/v1.16.1...v1.17.0) (2025-10-26)
 
 ### 🚀 Features
