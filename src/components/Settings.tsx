@@ -19,6 +19,7 @@ import {
   DialogContent,
   DialogContentText,
   DialogActions,
+  Tooltip,
 } from '@mui/material';
 import {
   Save as SaveIcon,
@@ -60,6 +61,14 @@ const Settings = () => {
   const [configDisabled, setConfigDisabled] = useState(false);
   const [serverInfo, setServerInfo] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [maintenanceLoading, setMaintenanceLoading] = useState(false);
+  const [maintenanceCommands, setMaintenanceCommands] = useState({
+    bgsave: true,
+    bgrewriteaof: true,
+    flushdb: true,
+    flushall: true,
+  });
+  const [maintenanceError, setMaintenanceError] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [confirmDialog, setConfirmDialog] = useState<{
@@ -87,8 +96,9 @@ const Settings = () => {
   useEffect(() => {
     if (activeConnection?.connected) {
       fetchConfig();
+      fetchMaintenanceCommands();
     }
-  }, [activeConnection?.id]);
+  }, [activeConnection]);
 
   const fetchConfig = async () => {
     setIsLoading(true);
@@ -122,6 +132,22 @@ const Settings = () => {
     }
   };
 
+  const fetchMaintenanceCommands = async () => {
+    try {
+      const response = await fetch('/api/redis/maintenance');
+      const data = await response.json();
+
+      if (response.ok) {
+        setMaintenanceCommands(data.commands);
+        setMaintenanceError(null);
+      } else {
+        setMaintenanceError(data.error ?? 'Não foi possível verificar comandos de manutenção.');
+      }
+    } catch (error) {
+      setMaintenanceError('Não foi possível verificar comandos de manutenção.');
+    }
+  };
+
   const handleConfigChange = (key: string, value: string) => {
     setEditableConfig((prev) => ({ ...prev, [key]: value }));
   };
@@ -150,7 +176,20 @@ const Settings = () => {
     }
   };
 
-  const handleMaintenance = async (operation: string) => {
+  const handleMaintenance = async (operation: keyof typeof maintenanceCommands) => {
+    if (!activeConnection?.connected) {
+      setError('Nenhuma conexão ativa');
+      closeConfirmDialog();
+      return;
+    }
+
+    if (!maintenanceCommands[operation]) {
+      setError('Este comando não está disponível no servidor Redis atual.');
+      closeConfirmDialog();
+      return;
+    }
+
+    setMaintenanceLoading(true);
     setError(null);
     setSuccess(null);
 
@@ -164,18 +203,24 @@ const Settings = () => {
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || 'Failed to execute operation');
+        throw new Error(data.error || 'Falha ao executar a operação');
       }
 
       setSuccess(`Operação ${operation.toUpperCase()} executada com sucesso!`);
-      setConfirmDialog({ open: false, operation: '', title: '', message: '' });
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Unknown error');
-      setConfirmDialog({ open: false, operation: '', title: '', message: '' });
+      setError(err instanceof Error ? err.message : 'Erro desconhecido ao executar manutenção');
+    } finally {
+      setMaintenanceLoading(false);
+      closeConfirmDialog();
     }
   };
 
-  const openConfirmDialog = (operation: string, title: string, message: string) => {
+  const openConfirmDialog = (operation: keyof typeof maintenanceCommands, title: string, message: string) => {
+    if (!maintenanceCommands[operation]) {
+      setError('Este comando não está disponível no servidor Redis atual.');
+      return;
+    }
+
     setConfirmDialog({ open: true, operation, title, message });
   };
 
@@ -384,17 +429,22 @@ const Settings = () => {
                 </Typography>
               </CardContent>
               <CardActions>
-                <Button
-                  variant="contained"
-                  startIcon={<SaveIcon />}
-                  onClick={() => openConfirmDialog(
-                    'bgsave',
-                    'Salvar Snapshot',
-                    'Deseja salvar um snapshot do banco de dados?'
-                  )}
-                >
-                  Executar BGSAVE
-                </Button>
+                <Tooltip title={maintenanceCommands.bgsave ? '' : 'Este comando não está disponível no servidor Redis atual.'}>
+                  <span>
+                    <Button
+                      variant="contained"
+                      startIcon={<SaveIcon />}
+                      disabled={!maintenanceCommands.bgsave}
+                      onClick={() => openConfirmDialog(
+                        'bgsave',
+                        'Salvar Snapshot',
+                        'Deseja salvar um snapshot do banco de dados?'
+                      )}
+                    >
+                      Executar BGSAVE
+                    </Button>
+                  </span>
+                </Tooltip>
               </CardActions>
             </Card>
           </Grid>
@@ -413,17 +463,22 @@ const Settings = () => {
                 </Typography>
               </CardContent>
               <CardActions>
-                <Button
-                  variant="contained"
-                  startIcon={<RefreshIcon />}
-                  onClick={() => openConfirmDialog(
-                    'bgrewriteaof',
-                    'Reescrever AOF',
-                    'Deseja reescrever o arquivo AOF?'
-                  )}
-                >
-                  Executar BGREWRITEAOF
-                </Button>
+                <Tooltip title={maintenanceCommands.bgrewriteaof ? '' : 'Este comando não está disponível no servidor Redis atual.'}>
+                  <span>
+                    <Button
+                      variant="contained"
+                      startIcon={<RefreshIcon />}
+                      disabled={!maintenanceCommands.bgrewriteaof}
+                      onClick={() => openConfirmDialog(
+                        'bgrewriteaof',
+                        'Reescrever AOF',
+                        'Deseja reescrever o arquivo AOF?'
+                      )}
+                    >
+                      Executar BGREWRITEAOF
+                    </Button>
+                  </span>
+                </Tooltip>
               </CardActions>
             </Card>
           </Grid>
