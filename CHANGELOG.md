@@ -1,3 +1,9 @@
+## [1.21.1](https://github.com/ruanbarroso/redis-explorer/compare/v1.21.0...v1.21.1) (2025-10-26)
+
+### 🐛 Bug Fixes
+
+* handle missing maintenance commands gracefully ([24d498d](https://github.com/ruanbarroso/redis-explorer/commit/24d498da82fe0618af110f9654b505bdc6f21fdd))
+
 ## [1.21.0](https://github.com/ruanbarroso/redis-explorer/compare/v1.20.0...v1.21.0) (2025-10-26)
 
 ### 🚀 Features
