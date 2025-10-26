@@ -1,3 +1,9 @@
+## [1.22.0](https://github.com/ruanbarroso/redis-explorer/compare/v1.21.1...v1.22.0) (2025-10-26)
+
+### 🚀 Features
+
+* alinhar thresholds e alertas do painel ([abf4217](https://github.com/ruanbarroso/redis-explorer/commit/abf4217b7d89e293562dc99f0f52fc42215d745a))
+
 ## [1.21.1](https://github.com/ruanbarroso/redis-explorer/compare/v1.21.0...v1.21.1) (2025-10-26)
 
 ### 🐛 Bug Fixes
