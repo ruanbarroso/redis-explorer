@@ -1,3 +1,9 @@
+## [1.17.0](https://github.com/ruanbarroso/redis-explorer/compare/v1.16.1...v1.17.0) (2025-10-26)
+
+### 🚀 Features
+
+* melhorias de UX e tratamento de erros ([6bd51ef](https://github.com/ruanbarroso/redis-explorer/commit/6bd51ef7f677a77632d1040dc61d56564cece5d7))
+
 ## [1.16.1](https://github.com/ruanbarroso/redis-explorer/compare/v1.16.0...v1.16.1) (2025-10-25)
 
 ### 🐛 Bug Fixes
