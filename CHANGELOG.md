@@ -1,3 +1,13 @@
+## [1.19.0](https://github.com/ruanbarroso/redis-explorer/compare/v1.18.1...v1.19.0) (2025-10-26)
+
+### 🚀 Features
+
+* melhorias no editor de valores ([79f9f58](https://github.com/ruanbarroso/redis-explorer/commit/79f9f582d2826d6b124990b9f379a460c7cb59e2))
+
+### ♻️ Code Refactoring
+
+* renomear AlertsContext para MetricsContext ([db686f2](https://github.com/ruanbarroso/redis-explorer/commit/db686f2fcaac7c3d1d9d0b5f761e8110f0be3494))
+
 ## [1.18.1](https://github.com/ruanbarroso/redis-explorer/compare/v1.18.0...v1.18.1) (2025-10-26)
 
 ### 🐛 Bug Fixes
