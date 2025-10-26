@@ -77,11 +77,12 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
   }, [isHydrated, isLoading, isAuthenticated, router]);
 
   // Redirecionar para tela de conexões se não houver conexão ativa
+  // Exceto se já estiver na página de conexões
   useEffect(() => {
-    if (isHydrated && isAuthenticated && !activeConnection) {
+    if (isHydrated && isAuthenticated && !activeConnection && !pathname.startsWith('/connections')) {
       router.push('/');
     }
-  }, [isHydrated, isAuthenticated, activeConnection, router]);
+  }, [isHydrated, isAuthenticated, activeConnection, router, pathname]);
 
   const menuItems = [
     { id: 'dashboard', label: 'Dashboard', icon: <DashboardIcon />, path: '/dashboard' },

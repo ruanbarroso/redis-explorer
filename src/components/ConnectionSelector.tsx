@@ -134,16 +134,8 @@ const ConnectionSelector = ({ onConnectionSuccess }: ConnectionSelectorProps) =>
     }
   }, [dispatch, isHydrated, hasLoadedOnce]);
 
-  // Check if there's an active connection after loading and redirect if needed
-  useEffect(() => {
-    if (hasLoadedOnce && activeConnection) {
-      if (onConnectionSuccess) {
-        onConnectionSuccess(activeConnection);
-      } else {
-        router.push('/dashboard');
-      }
-    }
-  }, [hasLoadedOnce, activeConnection, onConnectionSuccess, router]);
+  // Removed automatic redirection on mount
+  // Now redirection only happens when user explicitly clicks on a connection
 
   // Evita problemas de hidratação - APÓS todos os hooks
   if (!mounted || !isHydrated) {

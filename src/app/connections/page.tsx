@@ -30,10 +30,8 @@ export default function ConnectionsPage() {
       router.replace('/setup');
     } else if (!isAuthenticated) {
       router.replace('/login');
-    } else if (activeConnection) {
-      router.replace('/dashboard');
     }
-  }, [isAuthenticated, hasPassword, activeConnection, isHydrated, isLoading, router]);
+  }, [isAuthenticated, hasPassword, isHydrated, isLoading, router]);
 
   // Disconnect from active connection when page loads
   useEffect(() => {
@@ -54,7 +52,7 @@ export default function ConnectionsPage() {
   // If authenticated and no active connection, show connection selector
   return (
     <div className="min-h-screen bg-gray-100 p-4">
-      <ConnectionSelector />
+      <ConnectionSelector onConnectionSuccess={() => router.push('/dashboard')} />
     </div>
   );
 }
