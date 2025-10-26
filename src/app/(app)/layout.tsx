@@ -35,7 +35,7 @@ import LoadingScreen from '@/components/LoadingScreen';
 import AuthModals from '@/components/AuthModals';
 import ConnectionSwitcher from '@/components/ConnectionSwitcher';
 import ConnectionDialog from '@/components/ConnectionDialog';
-import { AlertsProvider, useAlerts } from '@/contexts/AlertsContext';
+import { MetricsProvider, useAlerts } from '@/contexts/MetricsContext';
 
 const DRAWER_WIDTH = 240;
 
@@ -276,8 +276,8 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   return (
-    <AlertsProvider>
+    <MetricsProvider>
       <AppLayoutContent>{children}</AppLayoutContent>
-    </AlertsProvider>
+    </MetricsProvider>
   );
 }

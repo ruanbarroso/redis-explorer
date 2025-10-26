@@ -17,7 +17,7 @@ import {
 } from '@mui/icons-material';
 import { useSelector } from 'react-redux';
 import { RootState } from '@/store';
-import { useAlerts } from '@/contexts/AlertsContext';
+import { useAlerts } from '@/contexts/MetricsContext';
 
 const Alerts = () => {
   const { activeConnection } = useSelector((state: RootState) => state.connection);

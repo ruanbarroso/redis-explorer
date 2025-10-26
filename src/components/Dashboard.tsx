@@ -17,7 +17,7 @@ import {
 import { useSelector } from 'react-redux';
 import { RootState } from '@/store';
 import { MetricCard } from './MetricCard';
-import { useMetrics } from '@/contexts/AlertsContext';
+import { useMetrics } from '@/contexts/MetricsContext';
 
 const Dashboard = () => {
   const { activeConnection } = useSelector((state: RootState) => state.connection);

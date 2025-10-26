@@ -16,7 +16,7 @@ interface MetricsContextType {
 
 const MetricsContext = createContext<MetricsContextType | undefined>(undefined);
 
-export function AlertsProvider({ children }: { children: ReactNode }) {
+export function MetricsProvider({ children }: { children: ReactNode }) {
   const { activeConnection } = useSelector((state: RootState) => state.connection);
   const [alerts, setAlerts] = useState<MetricAlert[]>([]);
   const [metrics, setMetrics] = useState<RedisMetrics | null>(null);
@@ -74,9 +74,9 @@ export function AlertsProvider({ children }: { children: ReactNode }) {
       clearTimeout(timeoutId);
       
       if (err instanceof Error && err.name === 'AbortError') {
-        console.log('Metrics request timeout after 5 seconds');
-        // Timeout não significa que a conexão está ruim, apenas que demorou
-        // Não desconecta automaticamente
+        console.log('Metrics request timeout after 5 seconds, redirecting to connections...');
+        // Timeout de 5 segundos significa que a conexão está ruim
+        handleConnectionError();
         return;
       }
       
@@ -139,7 +139,7 @@ export function AlertsProvider({ children }: { children: ReactNode }) {
 export function useAlerts() {
   const context = useContext(MetricsContext);
   if (context === undefined) {
-    throw new Error('useAlerts must be used within an AlertsProvider');
+    throw new Error('useAlerts must be used within a MetricsProvider');
   }
   return context;
 }
@@ -147,7 +147,7 @@ export function useAlerts() {
 export function useMetrics() {
   const context = useContext(MetricsContext);
   if (context === undefined) {
-    throw new Error('useMetrics must be used within an AlertsProvider');
+    throw new Error('useMetrics must be used within a MetricsProvider');
   }
   return context;
 }
