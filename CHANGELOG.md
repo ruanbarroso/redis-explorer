@@ -1,3 +1,9 @@
+## [1.23.1](https://github.com/ruanbarroso/redis-explorer/compare/v1.23.0...v1.23.1) (2025-10-27)
+
+### ♻️ Code Refactoring
+
+* remove endpoint call from ConnectionSwitcher component ([99d63e2](https://github.com/ruanbarroso/redis-explorer/commit/99d63e23cb833dacfb71c875445b3518f541c6af))
+
 ## [1.23.0](https://github.com/ruanbarroso/redis-explorer/compare/v1.22.0...v1.23.0) (2025-10-27)
 
 ### 🚀 Features
