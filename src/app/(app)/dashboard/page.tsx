@@ -6,7 +6,7 @@ import { useSelector } from 'react-redux';
 import { RootState } from '@/store';
 import { useAuth } from '@/hooks/useAuth';
 import { useIsClient } from '@/hooks/useIsClient';
-import LoadingScreen from '@/components/LoadingScreen';
+import DashboardLoadingScreen from '@/components/DashboardLoadingScreen';
 import Dashboard from '@/components/Dashboard';
 
 export default function DashboardPage() {
@@ -35,7 +35,7 @@ export default function DashboardPage() {
 
   // Show loading while checking auth state
   if (!isClient || !isHydrated || isLoading || !isAuthenticated || !activeConnection) {
-    return <LoadingScreen />;
+    return <DashboardLoadingScreen />;
   }
 
   return <Dashboard />;
