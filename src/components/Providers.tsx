@@ -6,6 +6,7 @@ import { Provider } from 'react-redux';
 import { store } from '@/store';
 import { theme } from '@/theme';
 import EmotionCacheProvider from '@/lib/emotion-cache';
+import { AuthProvider } from '@/contexts/AuthContext';
 
 interface ProvidersProps {
   children: React.ReactNode;
@@ -17,7 +18,9 @@ export default function Providers({ children }: ProvidersProps) {
       <EmotionCacheProvider>
         <ThemeProvider theme={theme}>
           <CssBaseline />
-          {children}
+          <AuthProvider>
+            {children}
+          </AuthProvider>
         </ThemeProvider>
       </EmotionCacheProvider>
     </Provider>
