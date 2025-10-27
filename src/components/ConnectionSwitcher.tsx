@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import {
   Box,
   Typography,
@@ -10,12 +10,10 @@ import {
   Link as LinkIcon,
   Lock as LockIcon,
 } from '@mui/icons-material';
-import { useDispatch, useSelector } from 'react-redux';
-import { useRouter, usePathname } from 'next/navigation';
-import { RootState, AppDispatch } from '@/store';
-import { connectToRedis, disconnectFromRedis, clearError, loadConnections } from '@/store/slices/connectionSlice';
+import { useSelector } from 'react-redux';
+import { useRouter } from 'next/navigation';
+import { RootState } from '@/store';
 import { RedisConnection } from '@/types/redis';
-import { useAuth } from '@/hooks/useAuth';
 import ErrorDialog from './ErrorDialog';
 
 interface ConnectionSwitcherProps {
@@ -23,25 +21,15 @@ interface ConnectionSwitcherProps {
 }
 
 const ConnectionSwitcher = ({ onManageConnections }: ConnectionSwitcherProps) => {
-  const dispatch = useDispatch<AppDispatch>();
   const router = useRouter();
-  const pathname = usePathname();
-  const { connections, activeConnection, isConnecting } = useSelector(
+  const { activeConnection } = useSelector(
     (state: RootState) => state.connection
   );
-  const { isAuthenticated, isHydrated } = useAuth();
 
   const [errorDialog, setErrorDialog] = useState<{ open: boolean; message: string }>({
     open: false,
     message: ''
   });
-
-  // Load connections when component mounts
-  useEffect(() => {
-    if (isHydrated && isAuthenticated && connections.length === 0) {
-      dispatch(loadConnections());
-    }
-  }, [dispatch, isHydrated, isAuthenticated, connections.length]);
 
   const handleManageConnections = () => {
     router.push('/connections');
