@@ -1,3 +1,19 @@
+## [1.23.0](https://github.com/ruanbarroso/redis-explorer/compare/v1.22.0...v1.23.0) (2025-10-27)
+
+### 🚀 Features
+
+* implement connection selector component ([21c866d](https://github.com/ruanbarroso/redis-explorer/commit/21c866d215264c7bd2110212bf7fe8a04972503d))
+* melhora gerenciamento de estado e telas de carregamento ([c5dd930](https://github.com/ruanbarroso/redis-explorer/commit/c5dd9303f25226b708a64f0200d871caaeefd415))
+
+### 🐛 Bug Fixes
+
+* improve connection management and routing ([d9fd2e2](https://github.com/ruanbarroso/redis-explorer/commit/d9fd2e2741bb90991e45e6a61d87903856830440))
+
+### ♻️ Code Refactoring
+
+* atualiza rotas e adiciona autenticação ([6b5b2cd](https://github.com/ruanbarroso/redis-explorer/commit/6b5b2cdfbe3f6fd2784dd0e948e4b2969bb9ac1a))
+* simplifica redirecionamento para /connections ([a6ab0de](https://github.com/ruanbarroso/redis-explorer/commit/a6ab0de72bfcc900732ce41c2c3b4b93e42f76e4))
+
 ## [1.22.0](https://github.com/ruanbarroso/redis-explorer/compare/v1.21.1...v1.22.0) (2025-10-26)
 
 ### 🚀 Features
