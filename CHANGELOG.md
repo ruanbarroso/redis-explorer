@@ -1,3 +1,9 @@
+## [1.23.2](https://github.com/ruanbarroso/redis-explorer/compare/v1.23.1...v1.23.2) (2025-11-07)
+
+### 🐛 Bug Fixes
+
+* melhorar detecção de separador de chaves Redis ([8513728](https://github.com/ruanbarroso/redis-explorer/commit/8513728cb35a301d796813155bc28c345d0223aa))
+
 ## [1.23.1](https://github.com/ruanbarroso/redis-explorer/compare/v1.23.0...v1.23.1) (2025-10-27)
 
 ### ♻️ Code Refactoring
