@@ -10,7 +10,7 @@ import {
   Chip,
   Typography,
 } from '@mui/material';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 interface SeparatorSelectorProps {
   detectedSeparator: string;
@@ -41,6 +41,14 @@ export default function SeparatorSelector({
   const [isCustom, setIsCustom] = useState(
     !COMMON_SEPARATORS.some(sep => sep.value === selectedValue && sep.value !== 'custom')
   );
+
+  // Sincronizar com detectedSeparator quando não há customização manual
+  useEffect(() => {
+    if (!customSeparator) {
+      setSelectedValue(detectedSeparator);
+      setIsCustom(!COMMON_SEPARATORS.some(sep => sep.value === detectedSeparator && sep.value !== 'custom'));
+    }
+  }, [detectedSeparator, customSeparator]);
 
   const handleChange = (value: string) => {
     if (value === 'custom') {

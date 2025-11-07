@@ -82,9 +82,11 @@ export class TreeBuilder {
   }
 
   static detectSeparator(keys: RedisKey[]): string {
+    if (keys.length === 0) return ':';
+    
     // Priorizar separadores semânticos primeiro
     const separators = ['::', ':', '/', '.', '-', '_', '|'];
-    const separatorCounts: { [key: string]: number } = {};
+    const separatorScores: { [key: string]: number } = {};
     const separatorWeights: { [key: string]: number } = {
       '::': 10, // Peso muito alto para ::
       ':': 5,   // Peso alto para :
@@ -95,8 +97,15 @@ export class TreeBuilder {
       '|': 2    // Peso baixo para |
     };
 
-    keys.forEach(key => {
-      separators.forEach(sep => {
+    // Para cada separador, calcular um score baseado em:
+    // 1. Quantas chaves contêm o separador (consistência)
+    // 2. Média de ocorrências por chave (estrutura hierárquica)
+    // 3. Peso do separador
+    separators.forEach(sep => {
+      let keysWithSeparator = 0;
+      let totalOccurrences = 0;
+      
+      keys.forEach(key => {
         let count = 0;
         
         // Para separadores de múltiplos caracteres
@@ -114,22 +123,36 @@ export class TreeBuilder {
           }
         }
         
-        // Aplicar peso ao contar
-        const weightedCount = count * (separatorWeights[sep] || 1);
-        separatorCounts[sep] = (separatorCounts[sep] || 0) + weightedCount;
+        if (count > 0) {
+          keysWithSeparator++;
+          totalOccurrences += count;
+        }
       });
+      
+      // Score baseado em:
+      // - Percentual de chaves que usam o separador (consistência)
+      // - Média de ocorrências (estrutura hierárquica, mas limitada para evitar ruído)
+      // - Peso do separador
+      const consistencyRatio = keysWithSeparator / keys.length;
+      const avgOccurrences = keysWithSeparator > 0 ? totalOccurrences / keysWithSeparator : 0;
+      
+      // Limitar média para evitar que separadores muito frequentes (como - em UUIDs) ganhem
+      const cappedAvgOccurrences = Math.min(avgOccurrences, 5);
+      
+      const score = consistencyRatio * cappedAvgOccurrences * (separatorWeights[sep] || 1);
+      separatorScores[sep] = score;
     });
     
     // Se :: tem qualquer ocorrência, priorizá-lo
-    if (separatorCounts['::'] > 0) {
+    if (separatorScores['::'] > 0) {
       return '::';
     }
     
-    // Caso contrário, usar o separador com maior pontuação ponderada
-    const bestSeparator = Object.entries(separatorCounts)
-      .filter(([, count]) => count > 0)
-      .sort(([sepA, countA], [sepB, countB]) => {
-        if (countA !== countB) return countB - countA;
+    // Caso contrário, usar o separador com maior score
+    const bestSeparator = Object.entries(separatorScores)
+      .filter(([, score]) => score > 0)
+      .sort(([sepA, scoreA], [sepB, scoreB]) => {
+        if (scoreA !== scoreB) return scoreB - scoreA;
         // Em caso de empate, priorizar separadores mais longos
         return sepB.length - sepA.length;
       })[0];
