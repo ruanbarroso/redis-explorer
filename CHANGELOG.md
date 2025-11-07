@@ -1,3 +1,9 @@
+## [1.23.3](https://github.com/ruanbarroso/redis-explorer/compare/v1.23.2...v1.23.3) (2025-11-07)
+
+### 🐛 Bug Fixes
+
+* aumentar timeout do yarn para builds arm64 emulados ([f856ab6](https://github.com/ruanbarroso/redis-explorer/commit/f856ab6c8bf9e7cd5c09cf44703e650e12f18dbb))
+
 ## [1.23.2](https://github.com/ruanbarroso/redis-explorer/compare/v1.23.1...v1.23.2) (2025-11-07)
 
 ### 🐛 Bug Fixes
