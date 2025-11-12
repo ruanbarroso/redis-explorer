@@ -1,3 +1,9 @@
+## [1.24.0](https://github.com/ruanbarroso/redis-explorer/compare/v1.23.3...v1.24.0) (2025-11-12)
+
+### 🚀 Features
+
+* adiciona suporte a armazenamento persistente de conexões em Docker/Kubernetes ([ef5502c](https://github.com/ruanbarroso/redis-explorer/commit/ef5502c3844e8ee0f6e2fa0ecc570c6694cc6324))
+
 ## [1.23.3](https://github.com/ruanbarroso/redis-explorer/compare/v1.23.2...v1.23.3) (2025-11-07)
 
 ### 🐛 Bug Fixes
