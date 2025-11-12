@@ -18,10 +18,22 @@ import { useSelector } from 'react-redux';
 import { RootState } from '@/store';
 import { MetricCard } from './MetricCard';
 import { useMetrics } from '@/contexts/MetricsContext';
+import { MetricChartModal } from './MetricChartModal';
+import { ChartableMetricName } from '@/types/metrics-history';
+import { useState } from 'react';
 
 const Dashboard = () => {
   const { activeConnection } = useSelector((state: RootState) => state.connection);
   const { metrics, isLoading } = useMetrics();
+  const [selectedMetric, setSelectedMetric] = useState<ChartableMetricName | null>(null);
+
+  const handleMetricClick = (metricName: ChartableMetricName) => {
+    setSelectedMetric(metricName);
+  };
+
+  const handleCloseModal = () => {
+    setSelectedMetric(null);
+  };
 
   const formatNumber = (num: number) => {
     return new Intl.NumberFormat().format(num);
@@ -80,8 +92,10 @@ const Dashboard = () => {
                 ? 'warning'
                 : 'error'
             }
-            tooltip="Percentual de requisições atendidas pelo cache. Saudável: >90%. Alerta: 80% - 90%. Crítico: <80%."
+            tooltip="Percentual de requisições atendidas pelo cache. Saudável: >90%. Alerta: 80% - 90%. Crítico: <80%. Clique para ver histórico."
             loading={isLoading}
+            metricName="cacheHitRatio"
+            onClick={() => handleMetricClick('cacheHitRatio')}
           />
         </Grid>
 
@@ -104,8 +118,10 @@ const Dashboard = () => {
                 ? 'warning'
                 : 'success'
             }
-            tooltip="Uso de memória atual. Saudável: <75%. Alerta: 75% - 90%. Crítico: >90%."
+            tooltip="Uso de memória atual. Saudável: <75%. Alerta: 75% - 90%. Crítico: >90%. Clique para ver histórico."
             loading={isLoading}
+            metricName="memoryUsagePercentage"
+            onClick={() => handleMetricClick('memoryUsagePercentage')}
           />
         </Grid>
 
@@ -126,8 +142,10 @@ const Dashboard = () => {
                 ? 'success'
                 : 'warning'
             }
-            tooltip="Razão entre memória física (RSS) e memória usada. Saudável: 1.0 - 1.5. Alerta: >1.5 e <3.0. Crítico: >3.0."
+            tooltip="Razão entre memória física (RSS) e memória usada. Saudável: 1.0 - 1.5. Alerta: >1.5 e <3.0. Crítico: >3.0. Clique para ver histórico."
             loading={isLoading}
+            metricName="memoryFragmentationRatio"
+            onClick={() => handleMetricClick('memoryFragmentationRatio')}
           />
         </Grid>
 
@@ -146,8 +164,10 @@ const Dashboard = () => {
                 ? 'warning'
                 : 'success'
             }
-            tooltip="Uso de CPU do processo Redis. Saudável: <50%. Alerta: 50% - 80%. Crítico: >80%."
+            tooltip="Uso de CPU do processo Redis. Saudável: <50%. Alerta: 50% - 80%. Crítico: >80%. Clique para ver histórico."
             loading={isLoading}
+            metricName="cpuPercentage"
+            onClick={() => handleMetricClick('cpuPercentage')}
           />
         </Grid>
 
@@ -166,8 +186,10 @@ const Dashboard = () => {
                 ? 'warning'
                 : 'success'
             }
-            tooltip="Mediana de latência (P50). Saudável: <1ms. Alerta: 1ms - 10ms. Crítico: >10ms."
+            tooltip="Mediana de latência (P50). Saudável: <1ms. Alerta: 1ms - 10ms. Crítico: >10ms. Clique para ver histórico."
             loading={isLoading}
+            metricName="latencyP50"
+            onClick={() => handleMetricClick('latencyP50')}
           />
         </Grid>
 
@@ -186,8 +208,10 @@ const Dashboard = () => {
                 ? 'warning'
                 : 'success'
             }
-            tooltip="Latência P95 das operações. Saudável: <5ms. Alerta: 5ms - 20ms. Crítico: >20ms."
+            tooltip="Latência P95 das operações. Saudável: <5ms. Alerta: 5ms - 20ms. Crítico: >20ms. Clique para ver histórico."
             loading={isLoading}
+            metricName="latencyP95"
+            onClick={() => handleMetricClick('latencyP95')}
           />
         </Grid>
       </Grid>
@@ -206,8 +230,10 @@ const Dashboard = () => {
             subtitle="Throughput atual"
             icon={<SpeedIcon />}
             color="secondary"
-            tooltip="Número de operações por segundo. Indica o throughput atual do Redis. Monitore junto com CPU e latência para identificar gargalos."
+            tooltip="Número de operações por segundo. Indica o throughput atual do Redis. Monitore junto com CPU e latência para identificar gargalos. Clique para ver histórico."
             loading={isLoading}
+            metricName="opsPerSec"
+            onClick={() => handleMetricClick('opsPerSec')}
           />
         </Grid>
 
@@ -218,8 +244,10 @@ const Dashboard = () => {
             subtitle={metrics?.connections?.blocked ? `${metrics.connections.blocked} bloqueados` : 'Nenhum bloqueado'}
             icon={<PeopleIcon />}
             color={metrics?.connections?.blocked ? 'warning' : 'success'}
-            tooltip="Número de clientes conectados. Redis suporta até 10.000 por padrão. Clientes bloqueados indicam operações aguardando (BLPOP, BRPOP, etc)."
+            tooltip="Número de clientes conectados. Redis suporta até 10.000 por padrão. Clientes bloqueados indicam operações aguardando (BLPOP, BRPOP, etc). Clique para ver histórico."
             loading={isLoading}
+            metricName="connectedClients"
+            onClick={() => handleMetricClick('connectedClients')}
           />
         </Grid>
 
@@ -230,8 +258,10 @@ const Dashboard = () => {
             subtitle={metrics && metrics.eviction?.evictedPerSec != null ? `${metrics.eviction.evictedPerSec.toFixed(1)}/s` : '-'}
             icon={<DeleteIcon />}
             color={metrics?.eviction?.evictedPerSec && metrics.eviction.evictedPerSec > 100 ? 'warning' : 'info'}
-            tooltip="Chaves removidas por política de eviction. Taxa alta (>100/s) indica memória insuficiente. Aceitável para workloads de cache."
+            tooltip="Chaves removidas por política de eviction. Taxa alta (>100/s) indica memória insuficiente. Aceitável para workloads de cache. Clique para ver histórico."
             loading={isLoading}
+            metricName="evictedPerSec"
+            onClick={() => handleMetricClick('evictedPerSec')}
           />
         </Grid>
 
@@ -242,8 +272,10 @@ const Dashboard = () => {
             subtitle={metrics && metrics.expiration?.expiredPerSec != null ? `${metrics.expiration.expiredPerSec.toFixed(1)}/s` : '-'}
             icon={<AccessTimeIcon />}
             color="info"
-            tooltip="Chaves expiradas por TTL. Expiração natural de chaves com time-to-live configurado. Use TTL para controlar crescimento do dataset."
+            tooltip="Chaves expiradas por TTL. Expiração natural de chaves com time-to-live configurado. Use TTL para controlar crescimento do dataset. Clique para ver histórico."
             loading={isLoading}
+            metricName="expiredPerSec"
+            onClick={() => handleMetricClick('expiredPerSec')}
           />
         </Grid>
       </Grid>
@@ -262,8 +294,10 @@ const Dashboard = () => {
             subtitle={metrics && metrics.network?.outputKbps != null ? `↑ ${metrics.network.outputKbps.toFixed(1)} KB/s` : '-'}
             icon={<NetworkIcon />}
             color="info"
-            tooltip="Taxa de entrada/saída de rede. Monitore para identificar picos de tráfego ou possíveis gargalos de rede."
+            tooltip="Taxa de entrada/saída de rede. Monitore para identificar picos de tráfego ou possíveis gargalos de rede. Clique para ver histórico."
             loading={isLoading}
+            metricName="networkInputKbps"
+            onClick={() => handleMetricClick('networkInputKbps')}
           />
         </Grid>
 
@@ -307,6 +341,9 @@ const Dashboard = () => {
           />
         </Grid>
       </Grid>
+
+      {/* Modal de Gráfico */}
+      <MetricChartModal open={!!selectedMetric} onClose={handleCloseModal} metricName={selectedMetric} />
     </Box>
   );
 };

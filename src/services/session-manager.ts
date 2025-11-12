@@ -131,6 +131,11 @@ class SessionManager {
     return connData?.redis || null;
   }
 
+  getConnectionId(sessionId: string): string | null {
+    const session = this.sessions.get(sessionId);
+    return session?.connectionId || null;
+  }
+
   clearSession(sessionId: string): void {
     this.sessions.delete(sessionId);
   }

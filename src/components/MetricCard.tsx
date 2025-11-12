@@ -3,6 +3,7 @@
 import { ReactNode } from 'react';
 import { Box, Card, CardContent, Typography, Tooltip, IconButton, Skeleton } from '@mui/material';
 import { Info as InfoIcon } from '@mui/icons-material';
+import { ChartableMetricName } from '@/types/metrics-history';
 
 interface MetricCardProps {
   title: string;
@@ -13,6 +14,8 @@ interface MetricCardProps {
   tooltip: string;
   loading?: boolean;
   badge?: ReactNode;
+  metricName?: ChartableMetricName;
+  onClick?: () => void;
 }
 
 export const MetricCard = ({
@@ -24,7 +27,11 @@ export const MetricCard = ({
   tooltip,
   loading = false,
   badge,
+  metricName,
+  onClick,
 }: MetricCardProps) => {
+  const isClickable = !!metricName && !!onClick;
+
   if (loading) {
     return (
       <Card sx={{ height: '100%', minHeight: 140 }}>
@@ -41,7 +48,21 @@ export const MetricCard = ({
   }
 
   return (
-    <Card sx={{ height: '100%', minHeight: 140 }}>
+    <Card
+      sx={{
+        height: '100%',
+        minHeight: 140,
+        cursor: isClickable ? 'pointer' : 'default',
+        transition: 'all 0.2s ease-in-out',
+        '&:hover': isClickable
+          ? {
+              transform: 'translateY(-4px)',
+              boxShadow: 4,
+            }
+          : {},
+      }}
+      onClick={isClickable ? onClick : undefined}
+    >
       <CardContent sx={{ p: 2, height: '100%', display: 'flex', flexDirection: 'column' }}>
         <Box display="flex" alignItems="center" justifyContent="space-between" mb={1}>
           <Box display="flex" alignItems="center" gap={1}>

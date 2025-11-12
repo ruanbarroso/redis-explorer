@@ -1,5 +1,7 @@
 import { RedisStats } from '@/types/redis';
 import { RedisMetrics, MetricAlert, DEFAULT_THRESHOLDS, AlertLevel } from '@/types/metrics';
+import { metricsStorage } from './metrics-storage';
+import { ChartableMetricName } from '@/types/metrics-history';
 
 interface SessionMetrics {
   previousStats: RedisStats | null;
@@ -10,7 +12,7 @@ export class MetricsService {
   // Map de sessionId -> histórico de métricas
   private static sessions = new Map<string, SessionMetrics>();
 
-  static calculateMetrics(stats: RedisStats, sessionId: string): RedisMetrics {
+  static calculateMetrics(stats: RedisStats, sessionId: string, connectionId?: string): RedisMetrics {
     const now = Date.now();
     
     // Obter ou criar sessão
@@ -158,11 +160,41 @@ export class MetricsService {
     session.previousStats = stats;
     session.previousTimestamp = now;
 
-    return {
+    const result = {
       ...metrics,
       alerts,
       health,
     };
+
+    // Persistir métricas para gráficos (se connectionId fornecido)
+    if (connectionId) {
+      this.persistMetrics(connectionId, result, now);
+    }
+
+    return result;
+  }
+
+  private static persistMetrics(connectionId: string, metrics: RedisMetrics, timestamp: number): void {
+    try {
+      const metricsData: Partial<Record<ChartableMetricName, number>> = {
+        cacheHitRatio: metrics.cacheHitRatio,
+        memoryUsagePercentage: metrics.memoryUsage.percentage,
+        memoryFragmentationRatio: metrics.memoryFragmentation.ratio,
+        cpuPercentage: metrics.cpu.percentage,
+        latencyP50: metrics.latency.p50 ?? undefined,
+        latencyP95: metrics.latency.p95 ?? undefined,
+        opsPerSec: metrics.throughput.opsPerSec,
+        connectedClients: metrics.connections.connected,
+        evictedPerSec: metrics.eviction.evictedPerSec,
+        expiredPerSec: metrics.expiration.expiredPerSec,
+        networkInputKbps: metrics.network.inputKbps,
+        networkOutputKbps: metrics.network.outputKbps,
+      };
+
+      metricsStorage.saveMultipleMetrics(connectionId, metricsData, timestamp);
+    } catch (error) {
+      console.error('Failed to persist metrics:', error);
+    }
   }
 
   static clearSession(sessionId: string): void {

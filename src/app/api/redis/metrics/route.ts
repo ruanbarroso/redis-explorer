@@ -4,6 +4,7 @@ import { sessionManager } from '@/services/session-manager';
 import { MetricsService } from '@/services/metrics';
 import { RedisStats } from '@/types/redis';
 import Redis from 'ioredis';
+import '@/lib/init-server'; // Inicializar servidor
 
 export async function GET() {
   try {
@@ -28,6 +29,9 @@ export async function GET() {
       );
     }
 
+    // Obter connectionId da sessão
+    const connectionId = sessionManager.getConnectionId(sessionId);
+
     // Buscar stats do Redis da sessão
     const info = await redis.info();
     const stats = parseRedisInfo(info);
@@ -38,7 +42,7 @@ export async function GET() {
     stats.clientRttP95 = latencies.p95;
     
 
-    const metrics = MetricsService.calculateMetrics(stats, sessionId);
+    const metrics = MetricsService.calculateMetrics(stats, sessionId, connectionId);
     
     return NextResponse.json({ metrics });
   } catch (error) {
