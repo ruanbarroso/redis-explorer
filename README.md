@@ -44,6 +44,30 @@ A modern, web-based Redis GUI explorer built with Next.js 15 and React 19. This 
 ![CLI Terminal](https://raw.githubusercontent.com/ruanbarroso/redis-explorer/main/docs/screenshots/cli.png)
 *Integrated Redis CLI with command history and syntax highlighting*
 
+### ⚙️ Configuration Management
+![Configuration - General](https://raw.githubusercontent.com/ruanbarroso/redis-explorer/main/docs/screenshots/config-1.png)
+*General configuration settings and preferences*
+
+![Configuration - Advanced](https://raw.githubusercontent.com/ruanbarroso/redis-explorer/main/docs/screenshots/config-2.png)
+*Advanced configuration options and customization*
+
+![Configuration - Security](https://raw.githubusercontent.com/ruanbarroso/redis-explorer/main/docs/screenshots/config-3.png)
+*Security settings and authentication management*
+
+### 📈 Real-time Monitoring
+![Monitor - Performance](https://raw.githubusercontent.com/ruanbarroso/redis-explorer/main/docs/screenshots/monitor-1.png)
+*Real-time performance monitoring with detailed metrics*
+
+![Monitor - Memory](https://raw.githubusercontent.com/ruanbarroso/redis-explorer/main/docs/screenshots/monitor-2.png)
+*Memory usage analysis and fragmentation tracking*
+
+![Monitor - Operations](https://raw.githubusercontent.com/ruanbarroso/redis-explorer/main/docs/screenshots/monitor-3.png)
+*Operations monitoring with command statistics*
+
+### 🐌 Slow Log Analysis
+![Slow Log](https://raw.githubusercontent.com/ruanbarroso/redis-explorer/main/docs/screenshots/slow-log.png)
+*Detailed slow query log with execution time analysis*
+
 ## 🚀 Quick Start
 
 **Try it now with Docker:**
