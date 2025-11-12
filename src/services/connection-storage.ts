@@ -5,6 +5,11 @@ import crypto from 'crypto';
 
 // Cross-platform user data directory
 const getUserDataDir = (): string => {
+  // Check for custom data directory (Docker/Kubernetes)
+  if (process.env.REDIS_EXPLORER_DATA_DIR) {
+    return process.env.REDIS_EXPLORER_DATA_DIR;
+  }
+  
   const platform = process.platform;
   const homeDir = process.env.HOME || process.env.USERPROFILE || '';
   
@@ -20,7 +25,7 @@ const getUserDataDir = (): string => {
   }
 };
 
-const APP_DATA_DIR = path.join(getUserDataDir(), 'redis-explorer');
+const APP_DATA_DIR = process.env.REDIS_EXPLORER_DATA_DIR || path.join(getUserDataDir(), 'redis-explorer');
 const CONNECTIONS_FILE = path.join(APP_DATA_DIR, 'connections.json');
 const ENCRYPTION_KEY = process.env.REDIS_EXPLORER_KEY || 'default-key-change-in-production';
 

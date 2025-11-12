@@ -50,6 +50,10 @@ COPY --from=builder /app/public ./public
 RUN mkdir .next
 RUN chown nextjs:nodejs .next
 
+# Create data directory for persistent storage
+RUN mkdir -p /app/data
+RUN chown nextjs:nodejs /app/data
+
 # Automatically leverage output traces to reduce image size
 # https://nextjs.org/docs/advanced-features/output-file-tracing
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
@@ -61,6 +65,11 @@ EXPOSE 3000
 
 ENV PORT 3000
 ENV HOSTNAME "0.0.0.0"
+# Set data directory for persistent storage
+ENV REDIS_EXPLORER_DATA_DIR /app/data
+
+# Volume for persistent data
+VOLUME ["/app/data"]
 
 # server.js is created by next build from the standalone output
 # https://nextjs.org/docs/pages/api-reference/next-config-js/output

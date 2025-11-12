@@ -72,11 +72,12 @@ A modern, web-based Redis GUI explorer built with Next.js 15 and React 19. This 
 
 **Try it now with Docker:**
 ```bash
-docker run -d -p 3000:3000 ruanbarroso/redis-explorer:latest
+docker run -d -p 3000:3000 -v redis-explorer-data:/app/data ruanbarroso/redis-explorer:latest
 ```
 Then open http://localhost:3000 in your browser!
 
 > 🔒 **First Access**: Create your admin password on first login
+> 💾 **Persistent Data**: Use `-v redis-explorer-data:/app/data` to keep your connections after restarts
 
 ## 🆚 Why Redis Explorer?
 
@@ -217,13 +218,21 @@ Then open http://localhost:3000 in your browser!
 
 ### 🐳 Using Docker Hub (Recommended)
 
-**Quick Start:**
+**Quick Start with Persistent Storage:**
 ```bash
-# Run Redis Explorer with Docker Hub image
-docker run -d --name redis-explorer -p 3000:3000 ruanbarroso/redis-explorer:latest
+# Run Redis Explorer with persistent data
+docker run -d \
+  --name redis-explorer \
+  -p 3000:3000 \
+  -v redis-explorer-data:/app/data \
+  ruanbarroso/redis-explorer:latest
 
 # Or with specific version
-docker run -d --name redis-explorer -p 3000:3000 ruanbarroso/redis-explorer:1.16.1
+docker run -d \
+  --name redis-explorer \
+  -p 3000:3000 \
+  -v redis-explorer-data:/app/data \
+  ruanbarroso/redis-explorer:1.16.1
 ```
 
 **Platform Support:**
@@ -235,9 +244,27 @@ docker run -d --name redis-explorer -p 3000:3000 ruanbarroso/redis-explorer:1.16
 # Start Redis server
 docker run -d --name redis -p 6379:6379 redis:7-alpine
 
-# Start Redis Explorer (linked to Redis)
-docker run -d --name redis-explorer -p 3000:3000 --link redis:redis ruanbarroso/redis-explorer:latest
+# Start Redis Explorer (linked to Redis) with persistent storage
+docker run -d \
+  --name redis-explorer \
+  -p 3000:3000 \
+  -v redis-explorer-data:/app/data \
+  --link redis:redis \
+  ruanbarroso/redis-explorer:latest
 ```
+
+**With custom encryption key (recommended for production):**
+```bash
+docker run -d \
+  --name redis-explorer \
+  -p 3000:3000 \
+  -v redis-explorer-data:/app/data \
+  -e REDIS_EXPLORER_KEY=your-secret-key-here \
+  ruanbarroso/redis-explorer:latest
+```
+
+> 💾 **Important**: Always use a volume (`-v`) to persist your connections across container restarts!
+> 🔐 **Security**: Set a custom `REDIS_EXPLORER_KEY` to encrypt stored passwords
 
 ### Using Docker Compose
 
@@ -445,6 +472,13 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - Built with [Next.js](https://nextjs.org/) and [React](https://reactjs.org/)
 - UI components from [Material-UI](https://mui.com/)
 - Redis client powered by [ioredis](https://github.com/luin/ioredis)
+
+## 📚 Documentation
+
+- 💾 **[Persistent Data Storage](PERSISTENT_DATA.md)** - Docker & Kubernetes volume configuration
+- 🐳 **[Docker Guide](DOCKER.md)** - Detailed Docker deployment instructions
+- 🔐 **[Security](SECURITY.md)** - Security best practices and guidelines
+- 🏗️ **[Server Storage Architecture](SERVER_STORAGE_ARCHITECTURE.md)** - Technical architecture details
 
 ## Support
 

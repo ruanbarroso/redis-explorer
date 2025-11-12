@@ -9,6 +9,9 @@ services:
       - NODE_ENV=production
       - REDIS_HOST=redis
       - REDIS_PORT=6379
+      - REDIS_EXPLORER_DATA_DIR=/app/data
+    volumes:
+      - redis_explorer_data:/app/data
     depends_on:
       - redis
     networks:
@@ -35,6 +38,7 @@ services:
       - redis-network
 
 volumes:
+  redis_explorer_data:
   redis_data:
   redis_auth_data:
 
