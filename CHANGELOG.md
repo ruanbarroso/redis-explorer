@@ -1,3 +1,9 @@
+## [1.25.0](https://github.com/ruanbarroso/redis-explorer/compare/v1.24.0...v1.25.0) (2025-11-12)
+
+### 🚀 Features
+
+* add metrics history and chart visualization system ([d7d421b](https://github.com/ruanbarroso/redis-explorer/commit/d7d421b530e0db37fb799bb80869443132684c82))
+
 ## [1.24.0](https://github.com/ruanbarroso/redis-explorer/compare/v1.23.3...v1.24.0) (2025-11-12)
 
 ### 🚀 Features
