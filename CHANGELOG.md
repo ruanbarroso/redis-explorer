@@ -1,3 +1,9 @@
+## [1.26.0](https://github.com/ruanbarroso/redis-explorer/compare/v1.25.0...v1.26.0) (2026-01-21)
+
+### 🚀 Features
+
+* add configurable SCAN COUNT parameter for Redis key browsing ([14d7056](https://github.com/ruanbarroso/redis-explorer/commit/14d7056d9fc553b3b435dec6342a53716c000836))
+
 ## [1.25.0](https://github.com/ruanbarroso/redis-explorer/compare/v1.24.0...v1.25.0) (2025-11-12)
 
 ### 🚀 Features
