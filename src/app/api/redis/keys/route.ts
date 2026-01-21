@@ -6,6 +6,7 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const pattern = searchParams.get('pattern') || '*';
     const count = parseInt(searchParams.get('count') || '100');
+    const scanCount = parseInt(searchParams.get('scanCount') || '1000');
     const loadAll = searchParams.get('loadAll') === 'true';
     
     // Get Redis from session
@@ -106,7 +107,7 @@ export async function GET(request: NextRequest) {
           'MATCH',
           pattern,
           'COUNT',
-          100 // Scan mais chaves por iteração
+          scanCount
         );
         
         cursor = newCursor;

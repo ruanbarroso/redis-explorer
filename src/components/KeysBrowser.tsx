@@ -79,6 +79,7 @@ const KeysBrowser = () => {
     (state: RootState) => state.keys
   );
   const { activeConnection } = useSelector((state: RootState) => state.connection);
+  const { keysToScan } = useSelector((state: RootState) => state.browserSettings);
   const listContainerRef = useRef<HTMLDivElement>(null);
   const [listHeight, setListHeight] = useState(600);
   const [localSearchPattern, setLocalSearchPattern] = useState(searchPattern);
@@ -170,7 +171,7 @@ const KeysBrowser = () => {
 
   const handleRefresh = () => {
     if (activeConnection) {
-      dispatch(fetchKeys({ pattern: searchPattern, count: 1000 }));
+      dispatch(fetchKeys({ pattern: searchPattern, scanCount: keysToScan }));
     }
   };
 
@@ -235,7 +236,7 @@ const KeysBrowser = () => {
 
   const handleSearch = () => {
     dispatch(setSearchPattern(localSearchPattern));
-    dispatch(fetchKeys({ pattern: localSearchPattern, count: 1000 }));
+    dispatch(fetchKeys({ pattern: localSearchPattern, scanCount: keysToScan }));
   };
 
   const handleKeySelect = (keyName: string) => {

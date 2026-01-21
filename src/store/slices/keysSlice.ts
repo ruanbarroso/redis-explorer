@@ -61,8 +61,8 @@ const initialState: KeysState = {
 
 export const fetchKeys = createAsyncThunk(
   'keys/fetchKeys',
-  async ({ pattern, count }: { pattern?: string; count?: number }) => {
-    return await redisClientService.getKeys(pattern, count);
+  async ({ pattern, count, scanCount }: { pattern?: string; count?: number; scanCount?: number }) => {
+    return await redisClientService.getKeys(pattern, count, scanCount);
   }
 );
 

@@ -28,8 +28,9 @@ import {
   Storage as StorageIcon,
   Info as InfoIcon,
 } from '@mui/icons-material';
-import { useSelector } from 'react-redux';
-import { RootState } from '@/store';
+import { useSelector, useDispatch } from 'react-redux';
+import { RootState, AppDispatch } from '@/store';
+import { setKeysToScan } from '@/store/slices/browserSettingsSlice';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -55,7 +56,10 @@ function TabPanel(props: TabPanelProps) {
 }
 
 const Settings = () => {
+  const dispatch = useDispatch<AppDispatch>();
   const { activeConnection } = useSelector((state: RootState) => state.connection);
+  const { keysToScan } = useSelector((state: RootState) => state.browserSettings);
+  const [localKeysToScan, setLocalKeysToScan] = useState(keysToScan);
   const [tabValue, setTabValue] = useState(0);
   const [config, setConfig] = useState<Record<string, string>>({});
   const [configDisabled, setConfigDisabled] = useState(false);
@@ -228,17 +232,9 @@ const Settings = () => {
     setConfirmDialog({ open: false, operation: '', title: '', message: '' });
   };
 
-  if (!activeConnection?.connected) {
-    return (
-      <Box p={3}>
-        <Alert severity="info">
-          Please connect to a Redis server to view settings.
-        </Alert>
-      </Box>
-    );
-  }
+  const isConnected = activeConnection?.connected;
 
-  if (isLoading) {
+  if (isLoading && isConnected) {
     return (
       <Box display="flex" justifyContent="center" alignItems="center" height="100%">
         <CircularProgress />
@@ -262,21 +258,92 @@ const Settings = () => {
 
       <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
         <Tabs value={tabValue} onChange={(e, newValue) => setTabValue(newValue)}>
-          <Tab label="Servidor" />
-          <Tab label="Manutenção" />
-          <Tab label="Informações" />
+          <Tab label="Browser" />
+          <Tab label="Servidor" disabled={!isConnected} />
+          <Tab label="Manutenção" disabled={!isConnected} />
+          <Tab label="Informações" disabled={!isConnected} />
         </Tabs>
       </Box>
 
-      {/* Tab: Servidor */}
+      {/* Tab: Browser */}
       <TabPanel value={tabValue} index={0}>
-        {configDisabled && (
-          <Alert severity="warning" sx={{ mb: 3 }}>
-            <strong>Configurações Desabilitadas:</strong> O comando CONFIG está desabilitado neste servidor Redis. 
-            Isso é comum em ambientes gerenciados (AWS ElastiCache, Azure Cache, etc). 
-            Apenas a aba "Informações" estará disponível.
+        <Grid container spacing={3}>
+          <Grid item xs={12} md={6}>
+            <Card>
+              <CardContent>
+                <Typography variant="h6" gutterBottom>
+                  Configurações de Busca
+                </Typography>
+                <TextField
+                  fullWidth
+                  label="SCAN COUNT (chaves por iteração)"
+                  type="number"
+                  value={localKeysToScan}
+                  onChange={(e) => setLocalKeysToScan(Math.max(100, parseInt(e.target.value) || 1000))}
+                  margin="normal"
+                  helperText="Parâmetro COUNT do comando SCAN do Redis. Define quantas chaves o Redis examina por iteração. Valores maiores = mais chaves encontradas por ciclo. Mínimo: 100"
+                  inputProps={{ min: 100, step: 100 }}
+                />
+              </CardContent>
+              <CardActions>
+                <Button
+                  startIcon={<SaveIcon />}
+                  variant="contained"
+                  onClick={() => {
+                    dispatch(setKeysToScan(localKeysToScan));
+                    setSuccess('Configuração de busca salva com sucesso!');
+                  }}
+                >
+                  Salvar
+                </Button>
+              </CardActions>
+            </Card>
+          </Grid>
+          <Grid item xs={12} md={6}>
+            <Card>
+              <CardContent>
+                <Box display="flex" alignItems="center" mb={2}>
+                  <InfoIcon sx={{ mr: 1 }} color="info" />
+                  <Typography variant="h6">
+                    Sobre o SCAN COUNT
+                  </Typography>
+                </Box>
+                <Typography variant="body2" color="text.secondary" paragraph>
+                  O comando SCAN do Redis itera sobre as chaves em lotes. O parâmetro COUNT 
+                  é uma <strong>dica</strong> para o Redis sobre quantas chaves examinar por iteração.
+                </Typography>
+                <Typography variant="body2" color="text.secondary" paragraph>
+                  <strong>Valor atual:</strong> {keysToScan}
+                </Typography>
+                <Typography variant="body2" color="text.secondary" paragraph>
+                  <strong>Importante:</strong> O COUNT não garante exatamente esse número de resultados - 
+                  é apenas uma sugestão ao Redis. Se você não está encontrando algumas chaves, 
+                  aumente este valor para que o SCAN examine mais chaves por iteração.
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  Valores recomendados: 1.000 (padrão), 10.000 (bases médias), 50.000+ (bases grandes).
+                </Typography>
+              </CardContent>
+            </Card>
+          </Grid>
+        </Grid>
+      </TabPanel>
+
+      {/* Tab: Servidor */}
+      <TabPanel value={tabValue} index={1}>
+        {!isConnected ? (
+          <Alert severity="info">
+            Conecte-se a um servidor Redis para visualizar as configurações do servidor.
           </Alert>
-        )}
+        ) : (
+          <>
+            {configDisabled && (
+              <Alert severity="warning" sx={{ mb: 3 }}>
+                <strong>Configurações Desabilitadas:</strong> O comando CONFIG está desabilitado neste servidor Redis. 
+                Isso é comum em ambientes gerenciados (AWS ElastiCache, Azure Cache, etc). 
+                Apenas a aba "Informações" estará disponível.
+              </Alert>
+            )}
         
         <Grid container spacing={3}>
           <Grid item xs={12} md={6}>
@@ -410,10 +477,17 @@ const Settings = () => {
             </Card>
           </Grid>
         </Grid>
+          </>
+        )}
       </TabPanel>
 
       {/* Tab: Manutenção */}
-      <TabPanel value={tabValue} index={1}>
+      <TabPanel value={tabValue} index={2}>
+        {!isConnected ? (
+          <Alert severity="info">
+            Conecte-se a um servidor Redis para acessar as opções de manutenção.
+          </Alert>
+        ) : (
         <Grid container spacing={3}>
           <Grid item xs={12} md={6}>
             <Card>
@@ -543,10 +617,16 @@ const Settings = () => {
             </Card>
           </Grid>
         </Grid>
+        )}
       </TabPanel>
 
       {/* Tab: Informações */}
-      <TabPanel value={tabValue} index={2}>
+      <TabPanel value={tabValue} index={3}>
+        {!isConnected ? (
+          <Alert severity="info">
+            Conecte-se a um servidor Redis para visualizar as informações do servidor.
+          </Alert>
+        ) : (
         <Grid container spacing={3}>
           <Grid item xs={12}>
             <Card>
@@ -617,6 +697,7 @@ const Settings = () => {
             </Card>
           </Grid>
         </Grid>
+        )}
       </TabPanel>
 
       {/* Confirm Dialog */}
@@ -635,7 +716,7 @@ const Settings = () => {
             Cancelar
           </Button>
           <Button 
-            onClick={() => handleMaintenance(confirmDialog.operation)}
+            onClick={() => handleMaintenance(confirmDialog.operation as keyof typeof maintenanceCommands)}
             color="error"
             variant="contained"
           >

@@ -49,10 +49,10 @@ class RedisClientService {
     }
   }
 
-  async getKeys(pattern: string = '*', count: number = 100): Promise<RedisKey[]> {
+  async getKeys(pattern: string = '*', count: number = 100, scanCount: number = 1000): Promise<RedisKey[]> {
     try {
       const response = await fetch(
-        `${this.baseUrl}/keys?pattern=${encodeURIComponent(pattern)}&count=${count}`,
+        `${this.baseUrl}/keys?pattern=${encodeURIComponent(pattern)}&count=${count}&scanCount=${scanCount}`,
         { credentials: 'include' }
       );
 
