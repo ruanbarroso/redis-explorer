@@ -3,6 +3,7 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import fs from 'fs';
 import path from 'path';
+import { AUTH_COOKIE_NAME, authCookieOptions } from '@/lib/auth-cookie';
 
 const AUTH_FILE = path.join(process.cwd(), 'data', 'auth.json');
 const JWT_SECRET = process.env.JWT_SECRET || 'redis-explorer-secret-key';
@@ -86,13 +87,11 @@ export async function POST(request: NextRequest) {
       message: 'Password configured successfully' 
     });
 
-    response.cookies.set('auth-token', token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      maxAge: 24 * 60 * 60, // 24 horas
-      path: '/',
-    });
+    response.cookies.set(
+      AUTH_COOKIE_NAME,
+      token,
+      authCookieOptions(request, 24 * 60 * 60) // 24 horas
+    );
 
     return response;
   } catch (error) {
