@@ -1,3 +1,28 @@
+## [1.26.1](https://github.com/ruanbarroso/redis-explorer/compare/v1.26.0...v1.26.1) (2026-06-01)
+
+### 🐛 Bug Fixes
+
+* derive auth cookie Secure flag from request protocol ([7d079ca](https://github.com/ruanbarroso/redis-explorer/commit/7d079cacf2318cb42aaa8c0006a16223056c11f2))
+
+
+---
+
+## 🐳 Docker Images
+- `docker pull ruanbarroso/redis-explorer:1.26.1`
+- `docker pull ruanbarroso/redis-explorer:latest`
+
+### 📦 Platform Support
+- linux/amd64
+
+### 🔧 Quick Start
+```bash
+docker run -d -p 3000:3000 ruanbarroso/redis-explorer:1.26.1
+```
+
+### 🔗 Links
+- [Docker Hub](https://hub.docker.com/r/ruanbarroso/redis-explorer/tags)
+- [GitHub Repository](https://github.com/ruanbarroso/redis-explorer)
+
 ## [1.26.0](https://github.com/ruanbarroso/redis-explorer/compare/v1.25.0...v1.26.0) (2026-01-21)
 
 ### 🚀 Features
