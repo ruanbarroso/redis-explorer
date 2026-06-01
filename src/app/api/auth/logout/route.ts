@@ -1,23 +1,22 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
+import { AUTH_COOKIE_NAME, authCookieOptions } from '@/lib/auth-cookie';
 
 // POST - Faz logout removendo o cookie
-export async function POST() {
+export async function POST(request: NextRequest) {
   try {
     console.log('🚪 API /auth/logout chamada');
-    
-    const response = NextResponse.json({ 
-      success: true, 
-      message: 'Logout successful' 
+
+    const response = NextResponse.json({
+      success: true,
+      message: 'Logout successful'
     });
 
-    // Remove o cookie de autenticação
-    response.cookies.set('auth-token', '', {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      maxAge: 0, // Expira imediatamente
-      path: '/',
-    });
+    // Remove o cookie de autenticação (mesmas flags do set, maxAge 0)
+    response.cookies.set(
+      AUTH_COOKIE_NAME,
+      '',
+      authCookieOptions(request, 0) // Expira imediatamente
+    );
 
     console.log('✅ Cookie auth-token removido com sucesso');
     return response;

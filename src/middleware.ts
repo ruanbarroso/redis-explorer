@@ -1,20 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { v4 as uuidv4 } from 'uuid';
+import { SESSION_COOKIE_NAME, shouldUseSecureCookie } from '@/lib/auth-cookie';
 
 export function middleware(request: NextRequest) {
   const response = NextResponse.next();
-  
+
   // Criar sessionId único para cada usuário se não existir
-  if (!request.cookies.get('redis-explorer-session')) {
+  if (!request.cookies.get(SESSION_COOKIE_NAME)) {
     const sessionId = uuidv4();
-    response.cookies.set('redis-explorer-session', sessionId, {
+    response.cookies.set(SESSION_COOKIE_NAME, sessionId, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
+      secure: shouldUseSecureCookie(request),
       sameSite: 'lax',
       maxAge: 60 * 60 * 24 * 30, // 30 dias
     });
   }
-  
+
   return response;
 }
 

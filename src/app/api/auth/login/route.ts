@@ -3,6 +3,7 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import fs from 'fs';
 import path from 'path';
+import { AUTH_COOKIE_NAME, authCookieOptions } from '@/lib/auth-cookie';
 
 const AUTH_FILE = path.join(process.cwd(), 'data', 'auth.json');
 const JWT_SECRET = process.env.JWT_SECRET || 'redis-explorer-secret-key';
@@ -64,13 +65,11 @@ export async function POST(request: NextRequest) {
       message: 'Login successful' 
     });
 
-    response.cookies.set('auth-token', token, {
-      httpOnly: true,
-      secure: process.env.FORCE_HTTPS === 'true' || (process.env.NODE_ENV === 'production' && process.env.DISABLE_SECURE_COOKIE !== 'true'),
-      sameSite: 'lax', // Mudando para 'lax' para funcionar melhor em desenvolvimento
-      maxAge: 24 * 60 * 60, // 24 horas
-      path: '/', // Garantindo que o cookie seja válido para todo o site
-    });
+    response.cookies.set(
+      AUTH_COOKIE_NAME,
+      token,
+      authCookieOptions(request, 24 * 60 * 60) // 24 horas
+    );
 
     console.log('[Auth Login] Cookie set successfully');
 
