@@ -177,6 +177,7 @@ const TreeView = ({
       zset: 'info',
       stream: 'error',
       json: 'default',
+      none: 'default',
     } as const;
     return colors[type] || 'default';
   };
