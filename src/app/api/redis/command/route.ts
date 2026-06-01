@@ -22,8 +22,9 @@ export async function POST(request: NextRequest) {
     }
     
     // Parse command string into array
-    const args = command.trim().split(/\s+/);
-    const result = await redis.call(...args);
+    const args: string[] = command.trim().split(/\s+/);
+    const [commandName, ...commandArgs] = args;
+    const result = await redis.call(commandName, ...commandArgs);
     
     return NextResponse.json({ result });
   } catch (error) {

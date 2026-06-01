@@ -17,7 +17,7 @@ export async function GET(request: NextRequest) {
     
     // Pegar todos os itens do slowlog (ou um número grande suficiente)
     // O Redis SLOWLOG retorna em ordem cronológica, não por duração
-    const allSlowLog = await redis.slowlog('GET', 1000);
+    const allSlowLog = await redis.slowlog('GET', 1000) as any[];
     
     // Ordenar do mais lento para o menos lento (duração decrescente)
     // slowLog format: [id, timestamp, duration, command, clientAddress, clientName]

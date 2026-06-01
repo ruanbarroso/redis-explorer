@@ -42,7 +42,7 @@ export async function GET() {
     stats.clientRttP95 = latencies.p95;
     
 
-    const metrics = MetricsService.calculateMetrics(stats, sessionId, connectionId);
+    const metrics = MetricsService.calculateMetrics(stats, sessionId, connectionId ?? undefined);
     
     return NextResponse.json({ metrics });
   } catch (error) {

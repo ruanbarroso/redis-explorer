@@ -96,7 +96,7 @@ export async function GET(request: NextRequest) {
       }
     } else {
       // Load limited keys using SCAN
-      const keys = [];
+      const keys: Array<{ name: string; type: string; ttl: number; size: number }> = [];
       let cursor = '0';
       let iterations = 0;
       const maxIterations = 100; // Limite de segurança para evitar loops infinitos

@@ -39,7 +39,7 @@ import { formatTTL } from '@/utils/timeFormatter';
 import KeyTypeIcon from './KeyTypeIcon';
 import { useDispatch } from 'react-redux';
 import { removeKeysLocally } from '@/store/slices/keysSlice';
-import { AppDispatch } from '@/store/store';
+import { AppDispatch } from '@/store';
 
 interface TreeViewProps {
   nodes: TreeNode[];

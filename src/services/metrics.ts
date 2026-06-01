@@ -42,8 +42,8 @@ export class MetricsService {
     // CPU% = (delta_cpu_time / delta_real_time) * 100
     let cpuPercentage = 0;
     if (session.previousStats) {
-      const deltaCpuSys = stats.usedCpuSys - session.previousStats.usedCpuSys;
-      const deltaCpuUser = stats.usedCpuUser - session.previousStats.usedCpuUser;
+      const deltaCpuSys = (stats.usedCpuSys ?? 0) - (session.previousStats.usedCpuSys ?? 0);
+      const deltaCpuUser = (stats.usedCpuUser ?? 0) - (session.previousStats.usedCpuUser ?? 0);
       const deltaCpuTotal = deltaCpuSys + deltaCpuUser;
       
       // CPU% = (tempo de CPU usado / tempo real decorrido) * 100

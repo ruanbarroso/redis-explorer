@@ -16,8 +16,8 @@ export async function GET(request: NextRequest) {
 
     // Tentar buscar configurações (pode estar desabilitado)
     try {
-      const configs = await redis.config('GET', '*');
-      
+      const configs = await redis.config('GET', '*') as string[];
+
       // Converter array [key, value, key, value] para objeto
       for (let i = 0; i < configs.length; i += 2) {
         configObj[configs[i]] = configs[i + 1];

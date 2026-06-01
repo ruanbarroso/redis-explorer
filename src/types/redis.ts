@@ -17,7 +17,7 @@ export interface RedisKey {
   encoding?: string;
 }
 
-export type RedisDataType = 'string' | 'hash' | 'list' | 'set' | 'zset' | 'stream' | 'json';
+export type RedisDataType = 'string' | 'hash' | 'list' | 'set' | 'zset' | 'stream' | 'json' | 'none';
 
 export interface RedisValue {
   type: RedisDataType;
@@ -126,8 +126,10 @@ export interface RedisStats {
   usedCpuSysPercent?: number;
   usedCpuUserPercent?: number;
   instantaneousCpuPercent?: number; // Real-time CPU usage
-  clientRttP50?: number; // Client RTT P50 latency
-  clientRttP95?: number; // Client RTT P95 latency
+  instantaneousInputKbps?: number; // Network input rate
+  instantaneousOutputKbps?: number; // Network output rate
+  clientRttP50?: number | null; // Client RTT P50 latency
+  clientRttP95?: number | null; // Client RTT P95 latency
   
   // Replication Advanced
   role?: string;

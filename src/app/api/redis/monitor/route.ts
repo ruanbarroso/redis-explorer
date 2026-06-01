@@ -36,7 +36,7 @@ export async function GET(request: NextRequest) {
 
         // Iniciar monitor
         console.log('Monitor: Starting monitor command');
-        monitorRedis.monitor((err, monitor) => {
+        monitorRedis.monitor((err: Error | null, monitor: any) => {
           console.log('Monitor: Callback called', { err: err?.message, hasMonitor: !!monitor });
           if (err) {
             console.error('Monitor error:', err);

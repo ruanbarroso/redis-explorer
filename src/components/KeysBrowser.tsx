@@ -438,7 +438,7 @@ const KeysBrowser = () => {
             ) : (
               <VirtualizedKeysList
                 keys={keys}
-                selectedKey={selectedKey}
+                selectedKey={selectedKey ?? undefined}
                 onKeySelect={handleKeySelect}
                 onKeyDelete={handleKeyDelete}
                 height={listHeight} // Altura dinâmica calculada
@@ -489,7 +489,7 @@ const KeysBrowser = () => {
 
           {/* Loading Progress Modal */}
           <LoadingProgressModal
-            open={(loadingProgress.isActive && loadingProgress.phase !== 'cancelled') || loadingProgress.phase === 'complete'}
+            open={loadingProgress.isActive || loadingProgress.phase === 'complete'}
             phase={loadingProgress.phase}
             message={loadingProgress.message}
             progress={loadingProgress.progress}

@@ -151,13 +151,15 @@ const Monitor = () => {
 
   const formatTimestamp = (timestamp: number) => {
     const date = new Date(timestamp);
-    return date.toLocaleTimeString('en-US', { 
-      hour12: false, 
-      hour: '2-digit', 
-      minute: '2-digit', 
+    // fractionalSecondDigits is supported at runtime but absent from the ES2017 lib types
+    const options: Intl.DateTimeFormatOptions & { fractionalSecondDigits?: number } = {
+      hour12: false,
+      hour: '2-digit',
+      minute: '2-digit',
       second: '2-digit',
       fractionalSecondDigits: 3,
-    });
+    };
+    return date.toLocaleTimeString('en-US', options);
   };
 
   if (!activeConnection?.connected) {
@@ -217,10 +219,9 @@ const Monitor = () => {
         )}
 
         <Box display="flex" flexDirection="column" alignItems="center" justifyContent="center" minHeight="400px" gap={4}>
-          <Chip 
-            label={`${commandCount} commands captured`} 
+          <Chip
+            label={`${commandCount} commands captured`}
             color="success"
-            size="large"
             sx={{ fontSize: '1.5rem', padding: '24px 16px' }}
           />
           
