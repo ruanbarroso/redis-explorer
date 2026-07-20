@@ -1,3 +1,4 @@
+import { jwtSecret } from '@/config/secrets';
 import { NextRequest, NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
@@ -6,7 +7,6 @@ import path from 'path';
 import { AUTH_COOKIE_NAME, authCookieOptions } from '@/lib/auth-cookie';
 
 const AUTH_FILE = path.join(process.cwd(), 'data', 'auth.json');
-const JWT_SECRET = process.env.JWT_SECRET || 'redis-explorer-secret-key';
 
 // Lê os dados de autenticação
 function getAuthData() {
@@ -53,7 +53,7 @@ export async function POST(request: NextRequest) {
     // Gera token JWT
     const token = jwt.sign(
       { authenticated: true, timestamp: Date.now() },
-      JWT_SECRET,
+      jwtSecret(),
       { expiresIn: '24h' }
     );
 

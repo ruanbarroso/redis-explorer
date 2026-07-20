@@ -1,7 +1,7 @@
+import { jwtSecret } from '@/config/secrets';
 import { NextRequest, NextResponse } from 'next/server';
 import jwt from 'jsonwebtoken';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'redis-explorer-secret-key';
 
 // GET - Verifica se o usuário está autenticado
 export async function GET(request: NextRequest) {
@@ -13,7 +13,7 @@ export async function GET(request: NextRequest) {
     }
 
     try {
-      jwt.verify(token, JWT_SECRET);
+      jwt.verify(token, jwtSecret());
       return NextResponse.json({ authenticated: true });
     } catch {
       return NextResponse.json({ authenticated: false });

@@ -1,3 +1,4 @@
+import { jwtSecret } from '@/config/secrets';
 import { NextRequest, NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
@@ -5,7 +6,6 @@ import fs from 'fs';
 import path from 'path';
 
 const AUTH_FILE = path.join(process.cwd(), 'data', 'auth.json');
-const JWT_SECRET = process.env.JWT_SECRET || 'redis-explorer-secret-key';
 
 // Lê os dados de autenticação
 function getAuthData() {
@@ -43,7 +43,7 @@ function verifyAuth(request: NextRequest): boolean {
     const token = request.cookies.get('auth-token')?.value;
     if (!token) return false;
 
-    jwt.verify(token, JWT_SECRET);
+    jwt.verify(token, jwtSecret());
     return true;
   } catch {
     return false;

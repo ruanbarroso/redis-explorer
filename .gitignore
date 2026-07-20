@@ -42,3 +42,6 @@ next-env.d.ts
 
 # OS
 Thumbs.db
+
+# Runtime state (auth hash, saved connections, metrics history)
+data/

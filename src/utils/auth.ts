@@ -1,7 +1,7 @@
+import { jwtSecret } from '@/config/secrets';
 import { NextRequest } from 'next/server';
 import jwt from 'jsonwebtoken';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'redis-explorer-secret-key';
 
 export function verifyAuthToken(request: NextRequest): boolean {
   try {
@@ -11,7 +11,7 @@ export function verifyAuthToken(request: NextRequest): boolean {
       return false;
     }
 
-    jwt.verify(token, JWT_SECRET);
+    jwt.verify(token, jwtSecret());
     return true;
   } catch {
     return false;
