@@ -1,3 +1,28 @@
+## [1.26.2](https://github.com/ruanbarroso/redis-explorer/compare/v1.26.1...v1.26.2) (2026-07-20)
+
+### 🐛 Bug Fixes
+
+* **security:** require JWT_SECRET and REDIS_EXPLORER_KEY, stop tracking data/ ([34f15ff](https://github.com/ruanbarroso/redis-explorer/commit/34f15ff53e985627d4c85196266bb92fe3c7b1ce))
+
+
+---
+
+## 🐳 Docker Images
+- `docker pull ruanbarroso/redis-explorer:1.26.2`
+- `docker pull ruanbarroso/redis-explorer:latest`
+
+### 📦 Platform Support
+- linux/amd64
+
+### 🔧 Quick Start
+```bash
+docker run -d -p 3000:3000 ruanbarroso/redis-explorer:1.26.2
+```
+
+### 🔗 Links
+- [Docker Hub](https://hub.docker.com/r/ruanbarroso/redis-explorer/tags)
+- [GitHub Repository](https://github.com/ruanbarroso/redis-explorer)
+
 ## [1.26.1](https://github.com/ruanbarroso/redis-explorer/compare/v1.26.0...v1.26.1) (2026-06-01)
 
 ### 🐛 Bug Fixes
